@@ -1,0 +1,42 @@
+/* -*- mode: c; c-file-style: "k&r" -*-
+
+  strnatcmp.c -- Perform 'natural order' comparisons of strings in C.
+  Copyright (C) 2000, 2004 by Martin Pool <mbp sourcefrog net>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+#ifndef __strnatcmp_h__
+#define __strnatcmp_h__
+
+#include "basecpp.h" // some useful macros and functions
+
+/* CUSTOMIZATION SECTION
+ *
+ * You can change this typedef, but must then also change the inline
+ * functions in strnatcmp.cpp
+ */
+
+typedef char nat_char;
+
+int strnatcmp    (const nat_char* a, const nat_char* b);
+int strnatcasecmp(const nat_char* a, const nat_char* b);
+
+#endif // __strnatcmp_h__
+
