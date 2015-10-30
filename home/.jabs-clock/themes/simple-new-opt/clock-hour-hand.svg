@@ -1,0 +1,19 @@
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" sodipodi:docname="clock-hour-hand.svg" sodipodi:version="0.32" version="1.0" xmlns:cc="http://web.resource.org/cc/" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 100 100" sodipodi:docbase="/home/mirco/src/cairo-demo/cairo-candy/themes/simple" xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd">
+ <sodipodi:namedview bordercolor="#666666" pagecolor="#ffffff" borderopacity="1.0" showguides="true">
+  <sodipodi:guide position="50" orientation="horizontal"/>
+  <sodipodi:guide position="50" orientation="vertical"/>
+  <sodipodi:guide position="100" orientation="horizontal"/>
+  <sodipodi:guide position="0" orientation="vertical"/>
+  <sodipodi:guide position="100" orientation="vertical"/>
+  <sodipodi:guide position="0" orientation="horizontal"/>
+  <sodipodi:guide position="90.060241" orientation="horizontal"/>
+  <sodipodi:guide position="10.040161" orientation="vertical"/>
+  <sodipodi:guide position="90.060241" orientation="vertical"/>
+  <sodipodi:guide position="10.040161" orientation="horizontal"/>
+  <sodipodi:guide position="-10.040161" orientation="vertical"/>
+  <sodipodi:guide position="40.060241" orientation="vertical"/>
+  <sodipodi:guide position="30.02008" orientation="vertical"/>
+ </sodipodi:namedview>
+ <path stroke-linejoin="round" d="m-0.0062619239 0h19.9292739" sodipodi:nodetypes="cc" stroke="#000" stroke-linecap="round" stroke-width="2" fill="none"/>
+ <path sodipodi:rx="1.2553" sodipodi:ry="1.2553" sodipodi:type="arc" d="m-0.94147491 5.2248487a1.2553 1.2553 0 1 1 -2.51060009 0 1.2553 1.2553 0 1 1 2.51060009 0z" transform="matrix(1.33917,0,0,1.33917,2.941679,-6.99678)" sodipodi:cy="5.2248487" sodipodi:cx="-2.196775"/>
+</svg>
