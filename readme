@@ -1,0 +1,121 @@
+# jabs-clock
+A fork and much enhanced replacement for cairo-clock
+
+--------------------------------------------------------------------------------
+This is a fork of the Launchpad cairo-clock code found at
+  https://launchpad.net/ubuntu/+source/cairo-clock.
+
+I *think* all of the non-install related bugs listed there have been squashed,
+  but there's still lots of testing to be done.
+
+Currently under heavy development with no distribution or build niceties added
+  yet. Just an 'install' script to pull down the needed shared libraries
+  (very minimal: apt-get use only) and a make file for creating the executable.
+
+This is my first GNU/Linux project so I'd like to publicly thank Mirco for
+  making cairo-clock and for making it open source. It's been fun learning
+  gdk/gtk, cairo, etc., using his code as a starting point.
+
+--------------------------------------------------------------------------------
+Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
+  limited to):
+
+- drag-n-drop support for simple theme archives
+
+- shouldn't crash for themes that have missing clock element svgs
+
+- shouldn't crash for missing themes and/or glade gui directories or files
+  (a <simple> theme internal to the clock is used when necessary)
+
+- much reduced cpu usage regardless of theme complexity or clock size,
+  typically 3 to 5 times less or more
+
+- if cairo-dock is running, will use dbus to send current time based icon
+  and label display requests every minute
+
+- when not visible on the current workspace, the app doesn't re-draw itself
+  (currently not enabled by default)
+
+- creates current theme-based icons for window manager taskbar/pager use
+
+- theme name lists are now sorted, and done so in a 'natural sort' way
+  (case insensitive, theme10 follows theme1, etc.)
+
+- rudimentary checks are made on a theme directories sub-directories contents
+  to try and ensure they contain a valid theme
+
+- for those themes containing both 12 and 24-hour clock-marks svgs, changing
+  the '24-hour display' setting will automatically switch between them without
+  requiring the selection of a different theme
+
+- the standard themes that had 12 and 24-hour versions (default, gremlin,
+  ipulse, radium, silvia, and simple) have been combined into 'theme-new'
+  versions that all contain both 12 and 24-hour clock-marks svgs
+
+- mouse wheel support for the following:
+  - theme changing (using ctrl)
+  - size changing (using shift or nothing)
+  - date text size changing (using alt)
+
+- mouse middle button resizing was changed to allow resizing based upon
+  the clock quadrant the mouse cursor is within; also, resizing with the
+  shift key down constrains the resizing to a square
+
+- resizing and theme changing currently occur via secondary worker threads,
+  so even complicated themes should not halt the clock hand animation while
+  all of the new versions of the required resources are being created (resizing
+  still has some wonkiness to it that needs to be fixed but the end result is
+  correct)
+
+- key support for the following:
+  - q or Q to stop the clock app
+  - context menu to bring up the right-click (context) menu
+  - 2 or 4 to toggle 12-hour/24-hour display
+  - b or B to toggle taskbar display
+  - d or D to toggle date text display
+  - f or F to change the date text layer
+  - i or I to toggle workspace stickiness
+  - k or K to toggle click-thru ability
+  - m or M to toggle maximum size display
+  - o or O to toggle staying above other windows
+  - p or P to toggle pager display
+  - s or S to toggle second hands display
+  - ?
+
+- gui support for the following:
+  - keeping the clock below all other windows
+  - specifying the layer the date text is shown on
+  - starting the clock with an animated 'zooming' effect
+  - specifying the screen corner to which the x and y coordinates are relative
+  - ?
+
+- command line support for the following:
+  (run the app with -? to see the complete list)
+  - those given above for gui support
+  - starting the clock at maximum size
+  - specifying a startup delay time to ensure the compositor is running
+  - specifying the use of the user's configuration settings as a default
+  - specifying the workspace the clock is shown on
+  - specifying the clock as being click-thru'able'
+  - specifying the clock display opacity
+  - ?
+
+- config entry support for the following:
+  - those given above for cli support
+  - displaying (or not) of any of the clock hands
+  - specifying the playing of any alarm or quarter-hour chime sounds
+  - specifying the second hand animation method: original, flick, or sweep
+  - specifying the date text font face, font size, color, and format
+  - specifying the color and outline width of the date text's shadow
+  - specifying the 'from center' vertical offset of the date text
+  - specifying the tooltip text date and time text 12 hour format
+  - specifying the tooltip text date and time text 24 hour format
+  - specifying the window title date and time text format
+
+- rudimentary support, using hardcoded-only test values for the following:
+  - paths to the quarter hour chime sound files
+  - path to the alarm sound file
+  - ?
+
+- ?
+

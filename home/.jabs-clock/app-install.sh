@@ -1,4 +1,4 @@
 #!/bin/sh
 
-sudo apt-get -q install libarchive13 libcanberra-gtk0 libglade2-0 libgsl0ldbl librsvg2-2 libwnck22
+sudo apt-get -q install libarchive13 libcanberra-gtk0 libglade2-0 libgsl0ldbl librsvg2-2
 
