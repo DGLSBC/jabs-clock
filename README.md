@@ -1,7 +1,8 @@
 # jabs-clock
 Just A Basic SVG Clock
 
-A fork and much enhanced replacement for cairo-clock
+A fork and much enhanced replacement for cairo-clock, an analog desktop clock
+  drawn with SVG and cairo and gtk 2.0
 
 ----
 This is my first GNU/Linux project. I've been messing with it since May 2015.

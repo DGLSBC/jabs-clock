@@ -1,5 +1,16 @@
 # jabs-clock
-A fork and much enhanced replacement for cairo-clock
+Just A Basic SVG Clock
+
+A fork and much enhanced replacement for cairo-clock, an analog desktop clock
+  drawn with SVG and cairo and gtk 2.0
+
+----
+This is my first GNU/Linux project. I've been messing with it since May 2015.
+It seems to run fine on the distros I've tested it on, which are several of the
+newer ones. It runs best on Mint/XFCE, as no startup wait time is required to
+get it to display a properly scaled clock.
+
+Still very much a beta but hopefully it will work for you.
 
 --------------------------------------------------------------------------------
 This is a fork of the Launchpad cairo-clock code found at
@@ -12,9 +23,13 @@ Currently under heavy development with no distribution or build niceties added
   yet. Just an 'install' script to pull down the needed shared libraries
   (very minimal: apt-get use only) and a make file for creating the executable.
 
+There are 32 bit x86 targeted executables in the home/.jabs-clock directory, as
+  well as a starting cfg file, gui cfg files, some sound files, and some new
+  themes I created by combining cairo-clock's 12 and 24 hour themes together.
+
 This is my first GNU/Linux project so I'd like to publicly thank Mirco for
   making cairo-clock and for making it open source. It's been fun learning
-  gdk/gtk, cairo, etc., using his code as a starting point.
+  gdk/gtk, cairo, svg, etc., using his code as a starting point.
 
 --------------------------------------------------------------------------------
 Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
@@ -68,10 +83,11 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   correct)
 
 - key support for the following:
-  - q or Q to stop the clock app
+  - ESC or q or Q to stop the clock app
   - context menu to bring up the right-click (context) menu
   - 2 or 4 to toggle 12-hour/24-hour display
   - b or B to toggle taskbar display
+  - c or C to center the clock on the display
   - d or D to toggle date text display
   - f or F to change the date text layer
   - i or I to toggle workspace stickiness
@@ -79,7 +95,9 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   - m or M to toggle maximum size display
   - o or O to toggle staying above other windows
   - p or P to toggle pager display
+  - r or R to reduce/increase animation redraw rate
   - s or S to toggle second hands display
+  - t or T for a text only display
   - ?
 
 - gui support for the following:
