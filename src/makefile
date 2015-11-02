@@ -10,7 +10,8 @@ APP_CPP_OBJS     := ${APP_CPP_SRCS:.cpp=.o}
 APP_OBJS         := $(APP_C_OBJS) $(APP_CPP_OBJS)
 
 #APP_PKG_LIBS      = gsl libarchive libcanberra libcanberra-gtk libglade-2.0 librsvg-2.0 libwnck-1.0 x11
-APP_PKG_LIBS      = gsl libarchive libcanberra libcanberra-gtk libglade-2.0 librsvg-2.0 x11
+#APP_PKG_LIBS      = gsl libarchive libcanberra libcanberra-gtk libglade-2.0 librsvg-2.0 x11
+APP_PKG_LIBS      = gsl libglade-2.0 librsvg-2.0 x11
 APP_PKG_CFG_CMP  := $(shell pkg-config --cflags $(APP_PKG_LIBS))
 APP_PKG_CFG_LNK  := $(shell pkg-config --libs   $(APP_PKG_LIBS))
 

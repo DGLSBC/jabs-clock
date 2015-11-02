@@ -803,6 +803,7 @@ gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWi
 void gui::on_composited_changed(GtkWidget* pWidget, gpointer userData)
 {
 	DEBUGLOGB;
+	DEBUGLOGF("%s\n", "entry");
 
 /*	gRun.drawScaleX  = gRun.drawScaleY = 1;
 	gRun.updateSurfs = true;
@@ -811,6 +812,7 @@ void gui::on_composited_changed(GtkWidget* pWidget, gpointer userData)
 	gtk_widget_queue_draw(pWidget);*/
 	update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, true);
 
+	DEBUGLOGF("%s\n", "exit");
 	DEBUGLOGE;
 }
 
@@ -1282,7 +1284,11 @@ gboolean gui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userD
 				  break;
 
 		case 'e':
-		case 'E': gRun.evalDraws = !gRun.evalDraws;
+//		case 'E':
+		case 'E': gRun.evalDraws = !gRun.evalDraws; // TODO: turning this on now crashes the app (fix in draw)
+//				  // TODO: for composited testing, otherwise leave commented out
+//				  gdk_window_set_composited(pWidget->window, gRun.evalDraws ? FALSE : TRUE);
+//				  on_composited_changed(pWidget, NULL);
 				  gtk_widget_queue_draw(pWidget);
 				  break;
 

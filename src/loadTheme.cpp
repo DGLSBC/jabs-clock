@@ -22,7 +22,7 @@
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-#define  _USEARCHIVE
+#undef   _USEARCHIVE
 
 //#include "nanosvg.h" // for svg xml file parsing to get object bounding boxes that rsvg & cairo don't provide
 
@@ -341,7 +341,7 @@ bool copyData(archive* sorc, archive* dest)
 	return okay;
 }
 
-#else
+#else  // _USEARCHIVE
 
 bool extract(const char* spath, const char* dpath) { return false; }
 

@@ -59,12 +59,8 @@
 #include <glib/gi18n.h>  // for 'international' text support
 #include <glib/gstdio.h> // for g_unlink
 
-#define   drawPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH)/2
-#define   infoPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH_IDLE)/2
-#define   waitPrio (G_PRIORITY_HIGH_IDLE)
-
-#define  _ENABLE_DND  // enable support for drag-n-dropping theme archives onto the clock window
-#undef   _SETMEMLIMIT // failed attempt at reducing memory usage after high-memory use episodes
+#define  _ENABLE_DND     // enable support for drag-n-dropping theme archives onto the clock window
+#undef   _SETMEMLIMIT    // failed attempt at reducing memory usage after high-memory use episodes
 
 // -----------------------------------------------------------------------------
 static void     print_theme_list();
@@ -81,8 +77,10 @@ Settings gCfg;
 // -----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-	DEBUGLOGP("entry - glib at %d.%d.%d\n",
+#ifdef DEBUGLOG
+	DEBUGLOGF("entry - glib at %d.%d.%d\n",
 		glib_major_version, glib_minor_version, glib_micro_version);
+#endif
 
 /*	char   cwd[PATH_MAX]; cwd[0] = '\0';
 	getcwd(cwd, vectsz(cwd));
@@ -90,17 +88,19 @@ int main(int argc, char** argv)
 	char   exe[PATH_MAX]; exe[0] = '\0';
 	readlink("/proc/self/exe", exe, PATH_MAX);
 
-	DEBUGLOGP("cwd:            *%s*\n", cwd);
-	DEBUGLOGP("argv[0]:        *%s*\n", argv[0]);
-	DEBUGLOGP("/proc/self/exe: *%s*\n", exe);
-	DEBUGLOGP("app  name:      *%s*\n", g_get_application_name());
-	DEBUGLOGP("prg  name:      *%s*\n", g_get_prgname());
-	DEBUGLOGP("user cnfg dir:  *%s*\n", g_get_user_config_dir());
-	DEBUGLOGP("user curr dir:  *%s*\n", g_get_current_dir());
-	DEBUGLOGP("user data dir:  *%s*\n", g_get_user_data_dir());
-	DEBUGLOGP("user home dir:  *%s*\n", g_get_home_dir());
-	DEBUGLOGP("user home env:  *%s*\n", g_getenv(_("HOME")));
-	DEBUGLOGP("user temp dir:  *%s*\n", g_get_tmp_dir());*/
+#ifdef DEBUGLOG
+	DEBUGLOGF("cwd:            *%s*\n", cwd);
+	DEBUGLOGF("argv[0]:        *%s*\n", argv[0]);
+	DEBUGLOGF("/proc/self/exe: *%s*\n", exe);
+	DEBUGLOGF("app  name:      *%s*\n", g_get_application_name());
+	DEBUGLOGF("prg  name:      *%s*\n", g_get_prgname());
+	DEBUGLOGF("user cnfg dir:  *%s*\n", g_get_user_config_dir());
+	DEBUGLOGF("user curr dir:  *%s*\n", g_get_current_dir());
+	DEBUGLOGF("user data dir:  *%s*\n", g_get_user_data_dir());
+	DEBUGLOGF("user home dir:  *%s*\n", g_get_home_dir());
+	DEBUGLOGF("user home env:  *%s*\n", g_getenv(_("HOME")));
+	DEBUGLOGF("user temp dir:  *%s*\n", g_get_tmp_dir());
+#endif*/
 
 /*	if( true )
 	{
@@ -108,16 +108,19 @@ int main(int argc, char** argv)
 		memset   (&exe, 0, sizeof(exe));
 		readlink ("/proc/self/exe", exe, vectsz(exe));
 		char*      dir = g_path_get_dirname(exe);
-		DEBUGLOGP("/proc/self/exe: *%s*\n", exe);
-		DEBUGLOGP("exe dir:        *%s*\n", dir);
+#ifdef DEBUGLOG
+		DEBUGLOGF("/proc/self/exe: *%s*\n", exe);
+		DEBUGLOGF("exe dir:        *%s*\n", dir);
+#endif
 		g_free(dir);
 	}*/
 
 /*	if( strcmp(cwd, "/home/me/bin") )
 	{
-		DEBUGLOGS("cwd is NOT what was spec'd in the .desktop file Path parm");
-		DEBUGLOGS("changing cwd to be what it should already have been");
-
+#ifdef DEBUGLOG
+		DEBUGLOGF("%s\n", "cwd is NOT what was spec'd in the .desktop file Path parm");
+		DEBUGLOGF("%s\n", "changing cwd to be what it should already have been");
+#endif
 //		if( chdir("/home/me/bin") != 0 )
 		if( chdir(g_get_home_dir()) != 0 )
 		{
@@ -137,10 +140,16 @@ int main(int argc, char** argv)
 	gRun.updateSurfs = true;
 	gRun.drawScaleX  = gRun.drawScaleY = 1;
 
-//	DEBUGLOGF("bef cfg/draw init calls\n");
+#ifdef DEBUGLOG
+	DEBUGLOGF("%s\n", "bef cfg/draw init calls");
+#endif
+
 	cfg ::init();
 	draw::init();
-//	DEBUGLOGF("aft cfg/draw init calls\n");
+
+#ifdef DEBUGLOG
+	DEBUGLOGF("%s\n", "aft cfg/draw init calls");
+#endif
 
 #ifdef _SETMEMLIMIT
 	setmemlimit();
@@ -174,7 +183,9 @@ int main(int argc, char** argv)
 
 	if( !gtk_init_check(&argc, &argv) )
 	{
-		DEBUGLOGS("There was an error while trying to initialize gtk");
+#ifdef DEBUGLOG
+		DEBUGLOGF("%s\n", "There was an error while trying to initialize gtk");
+#endif
 		return 1;
 	}
 
@@ -191,6 +202,8 @@ int main(int argc, char** argv)
 	{
 		cfg::load();
 	}
+
+	// NOTE: at this point the -D cli switch usage takes over for debug printing
 
 	if( gCfg.clockWS )
 		gCfg.sticky = false;
@@ -392,6 +405,7 @@ int main(int argc, char** argv)
 
 //	update_input_shape(gRun.pMainWindow, gCfg.clockW, gCfg.clockH, false);
 	update_input_shape(gRun.pMainWindow, gCfg.clockW, gCfg.clockH, true, true, false);
+	draw::update_surfs_swap(gCfg.clockW, gCfg.clockH);
 
 	gtk_window_set_focus_on_map(GTK_WINDOW(gRun.pMainWindow), TRUE);
 

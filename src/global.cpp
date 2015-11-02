@@ -13,13 +13,8 @@
 #include "debug.h"
 #include "utility.h"
 #include <glib/gstdio.h> // for g_unlink
-
-#include "draw.h"
 #include "settings.h"
-
-#define   drawPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH)/2
-#define   infoPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH_IDLE)/2
-#define   waitPrio (G_PRIORITY_HIGH_IDLE)
+#include "draw.h"
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -119,6 +114,12 @@ static void change_theme_end(gpointer data, const char* path, const char* file, 
 
 			gRun.updateSurfs = true;
 			update_input_shape(pWindow, gCfg.clockW, gCfg.clockH, true, false, false); // surfs only
+
+			// swap the new surfs for the old after pausing the main thread
+
+			gdk_threads_enter();
+			draw::update_surfs_swap(gCfg.clockW, gCfg.clockH);
+			gdk_threads_leave();
 
 //			gdk_threads_enter();
 //			update_input_shape(pWindow, gCfg.clockW, gCfg.clockH, true, true);
@@ -517,9 +518,9 @@ void update_input_shape(GtkWidget* pWindow, int width, int height, bool dosurfs,
 		if( lock )
 			gdk_threads_enter();
 
-		GdkBitmap*  pShapeMask1 = NULL;
-		GdkBitmap*  pShapeMask2 = NULL;
-		bool        shapeWidget = !gtk_widget_is_composited(pWindow);
+		GdkBitmap* pShapeMask1 = NULL;
+		GdkBitmap* pShapeMask2 = NULL;
+		bool       shapeWidget = !gtk_widget_is_composited(pWindow);
 
 		if( lock )
 			gdk_threads_leave();
@@ -565,14 +566,14 @@ void update_input_shape(GtkWidget* pWindow, int width, int height, bool dosurfs,
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-#include <canberra-gtk.h>
+/*#include <canberra-gtk.h>
 
 // -----------------------------------------------------------------------------
 void ca_finish_cb(ca_context* c, uint32_t id, int error_code, void* userData)
 {
 	bool* b = (bool*)userData;
 	*b      =  true;
-}
+}*/
 
 // -----------------------------------------------------------------------------
 void update_ts_info(bool forceTTip, bool forceDate, bool forceTime)
@@ -777,7 +778,7 @@ void update_ts_info(bool forceTTip, bool forceDate, bool forceTime)
 		}
 	}
 
-	if( gCfg.doSounds )
+/*	if( gCfg.doSounds )
 	{
 		static const char* rcpath = "/." APP_NAME "/sounds/westminster_chimes/"; // TODO: put sound theme dir in cfg
 		const char*        spath =  get_home_subpath(rcpath, strlen(rcpath));
@@ -860,7 +861,7 @@ void update_ts_info(bool forceTTip, bool forceDate, bool forceTime)
 
 		if( spath )
 			delete [] spath;
-	}
+	}*/
 
 	DEBUGLOGE;
 }
@@ -913,6 +914,12 @@ static gpointer update_wnd_dim_func(gpointer data)
 //	gRun.updateSurfs =  true;
 //	gCfg.clockW      =  width;
 //	gCfg.clockH      =  height;
+
+	// swap the new surfs for the old after pausing the main thread
+
+	gdk_threads_enter();
+	draw::update_surfs_swap(width, height);
+	gdk_threads_leave();
 
 //	update_input_shape(pWindow, width, height, true, false), false; // surfs only
 /*
@@ -1004,6 +1011,7 @@ void update_wnd_dim(GtkWidget* pWindow, int width, int height, bool async)
 	gCfg.clockH      =  height;
 
 	update_input_shape(pWindow, width, height, true, true, false);
+	draw::update_surfs_swap(gCfg.clockW, gCfg.clockH);
 
 	gtk_widget_queue_draw(pWindow);
 	gdk_window_process_updates(pWindow->window, TRUE);

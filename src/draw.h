@@ -45,6 +45,8 @@ void update_ani();
 void update_bkgnd();
 void update_date_surf();
 void update_surfs(GtkWidget* pWidget, int width, int height);
+void update_surfs_swap(int width, int height);
+
 bool update_theme(const char* path, const char* name, UpdateThemeDone callBack, gpointer cbData);
 
 extern double refreshTime[];

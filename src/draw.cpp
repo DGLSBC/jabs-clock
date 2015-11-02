@@ -73,6 +73,19 @@ static const double g_shoff =  0.25;
 // -----------------------------------------------------------------------------
 namespace draw
 {
+
+// -----------------------------------------------------------------------------
+struct DrawSurf
+{
+	SurfaceType      type;
+	cairo_surface_t* pCairoSurf;
+	cairo_pattern_t* pCairoPtrn;
+	gint             width;
+	gint             height;
+	double           svgRatW;
+	double           svgRatH;
+};
+
 // -----------------------------------------------------------------------------
 struct UpdateTheme
 {
@@ -103,8 +116,8 @@ static void render_hand_hl(cairo_t* pContext, int width, int height, double scal
 
 static void render_surf(cairo_t* pContext, enum SurfaceType st, cairo_operator_t op1, int op2=-1, double alf=1.0);
 
-static cairo_surface_t* update_surface(cairo_surface_t* pOldSurface, cairo_t* pSourceContext, int width, int height, SurfaceType type, bool newSurf);
-static bool             update_surf(cairo_t* pContext, SurfaceType st, int width, int height);
+static bool update_surface(cairo_t* pSourceContext, int width, int height, SurfaceType type);
+static bool update_surf   (cairo_t* pContext, SurfaceType st, int width, int height);
 
 static gpointer update_theme_func(gpointer data);
 static bool     update_theme_internal(const char* path, const char* name);
@@ -120,9 +133,8 @@ double refreshCumm[100+2];
 int    refreshCount =  0;
 
 // -----------------------------------------------------------------------------
-static cairo_surface_t*      g_pCairoSurf[SURF_COUNT];
-static cairo_surface_t*      g_pCairoTemp[SURF_COUNT];
-static cairo_pattern_t*      g_pCairoPtrn[SURF_COUNT];
+static DrawSurf              g_surfs[SURF_COUNT];
+static DrawSurf              g_temps[SURF_COUNT];
 static gint                  g_pCairoSurfLock = 0; // per surface bit locking
 
 static cairo_font_face_t*    g_pTextFontFace  = NULL;
@@ -132,11 +144,13 @@ static RsvgHandle*           g_pSvgHandle[CLOCK_ELEMENTS];
 static RsvgDimensionData     g_svgClock       = { 0, 0 };
 static gint                  g_pSvgHandleLock = 0; // per element bit locking
 static cairo_region_t*       g_pMaskRgn       = NULL;
+
 static gint                  g_surfaceW       = 0;
 static gint                  g_surfaceH       = 0;
+/*
 static double                g_wratio         = 1;
 static double                g_hratio         = 1;
-
+*/
 #if CAIRO_HAS_FT_FONT
 static FT_Face    ft_face    = 0;
 static FT_Library ft_library = 0;
@@ -195,13 +209,18 @@ void draw::init()
 	DEBUGLOGB;
 //	DEBUGLOGF("entry\n");
 
-	for( size_t s =  0; s < SURF_COUNT; s++ )
+	for( size_t st =  0; st < SURF_COUNT; st++ )
 	{
-		SurfLockBeg (s);
-		g_pCairoPtrn[s] = NULL;
-		g_pCairoTemp[s] = NULL;
-		g_pCairoSurf[s] = NULL;
-		SurfLockEnd (s);
+		SurfLockBeg(st);
+		g_surfs[st].type       = (SurfaceType)st;
+		g_surfs[st].pCairoSurf =  NULL;
+		g_surfs[st].pCairoPtrn =  NULL;
+		g_surfs[st].width      =  0;
+		g_surfs[st].height     =  0;
+		g_surfs[st].svgRatW    =  0;
+		g_surfs[st].svgRatH    =  0;
+		g_temps[st]            =  g_surfs[st];
+		SurfLockEnd(st);
 	}
 
 	for( size_t e =  0; e < CLOCK_ELEMENTS; e++ )
@@ -224,13 +243,13 @@ void draw::beg(bool init)
 	{
 		DEBUGLOGS("initing");
 
-		for( size_t s = 0; s < SURF_COUNT; s++ )
+		for( size_t st = 0; st < SURF_COUNT; st++ )
 		{
-			SurfLockBeg (s);
-			g_pCairoPtrn[s] = NULL;
-			g_pCairoTemp[s] = NULL;
-			g_pCairoSurf[s] = NULL;
-			SurfLockEnd (s);
+			SurfLockBeg(st);
+			g_surfs[st].pCairoPtrn = NULL;
+			g_surfs[st].pCairoSurf = NULL;
+			g_temps[st]            = g_surfs[st];
+			SurfLockEnd(st);
 		}
 
 		if( g_svgClock.width == 0 || g_svgClock.height == 0 )
@@ -348,23 +367,27 @@ void draw::end(bool init)
 		g_object_unref(g_pPFLayout);
 	g_pPFLayout = NULL;*/
 
-	for( size_t s = 0; s < SURF_COUNT; s++ )
+	for( size_t st = 0; st < SURF_COUNT; st++ )
 	{
-		SurfLockBeg(s);
+		SurfLockBeg(st);
 
-		if( g_pCairoPtrn[s] )
-			cairo_pattern_destroy(g_pCairoPtrn[s]);
-		g_pCairoPtrn[s] = NULL;
+		if( g_surfs[st].pCairoPtrn )
+			cairo_pattern_destroy(g_surfs[st].pCairoPtrn);
+		g_surfs[st].pCairoPtrn = NULL;
 
-		if( g_pCairoTemp[s] )
-			cairo_surface_destroy(g_pCairoTemp[s]);
-		g_pCairoTemp[s] = NULL;
+		if( g_surfs[st].pCairoSurf )
+			cairo_surface_destroy(g_surfs[st].pCairoSurf);
+		g_surfs[st].pCairoSurf = NULL;
 
-		if( g_pCairoSurf[s] )
-			cairo_surface_destroy(g_pCairoSurf[s]);
-		g_pCairoSurf[s] = NULL;
+		if( g_temps[st].pCairoPtrn )
+			cairo_pattern_destroy(g_temps[st].pCairoPtrn);
+		g_temps[st].pCairoPtrn = NULL;
 
-		SurfLockEnd(s);
+		if( g_temps[st].pCairoSurf )
+			cairo_surface_destroy(g_temps[st].pCairoSurf);
+		g_temps[st].pCairoSurf = NULL;
+
+		SurfLockEnd(st);
 	}
 
 	gRun.optHorHand = true;
@@ -428,10 +451,10 @@ bool draw::make_icon(const char* iconPath)
 
 			// TODO: fix following non-multi-thread usable ratio fiddling
 
-			double wrt = g_wratio, hrt = g_hratio;
+/*			double wrt = g_wratio, hrt = g_hratio;
 
 			g_wratio   = (double)isz/(double)g_svgClock.width;
-			g_hratio   = (double)isz/(double)g_svgClock.height;
+			g_hratio   = (double)isz/(double)g_svgClock.height;*/
 
 			render_cbase(pContext, isz, isz, false);
 //			render_bkgnd(pContext, isz, isz, false, false);
@@ -446,8 +469,8 @@ bool draw::make_icon(const char* iconPath)
 
 //			render(pContext, isz, isz, 1.0);
 
-			g_wratio = wrt;
-			g_hratio = hrt;
+/*			g_wratio = wrt;
+			g_hratio = hrt;*/
 
 			cairo_destroy(pContext);
 		}
@@ -499,7 +522,9 @@ GdkBitmap* draw::make_mask(int width, int height, bool shaped)
 			{
 				DEBUGLOGS("mask svg is available");
 
-				cairo_scale(pContext, g_wratio, g_hratio);
+//				cairo_scale(pContext, g_wratio, g_hratio);
+				cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
+
 				cairo_set_operator(pContext, CAIRO_OPERATOR_OVER);
 
 				okay = rsvg_handle_render_cairo(g_pSvgHandle[CLOCK_MASK], pContext) == TRUE;
@@ -528,7 +553,11 @@ GdkBitmap* draw::make_mask(int width, int height, bool shaped)
 					for( size_t r = 0; r < nr; r++ )
 					{
 						cairo_region_get_rectangle(g_pMaskRgn, r, &cr);
-						cairo_rectangle(pContext, (double)cr.x*g_wratio, (double)cr.y*g_hratio, (double)cr.width*g_wratio, (double)cr.height*g_hratio);
+//						cairo_rectangle(pContext, (double)cr.x*g_wratio, (double)cr.y*g_hratio, (double)cr.width*g_wratio, (double)cr.height*g_hratio);
+						cairo_rectangle(pContext, (double)cr.x     *(double)width /(double)g_svgClock.width,
+												  (double)cr.y     *(double)height/(double)g_svgClock.height,
+												  (double)cr.width *(double)width /(double)g_svgClock.width,
+												  (double)cr.height*(double)height/(double)g_svgClock.height);
 					}
 #endif
 					cairo_set_source_rgba(pContext, 1, 1, 1, 1);
@@ -811,7 +840,7 @@ void draw::render(cairo_t* pContext, double scaleX, double scaleY, bool renderIt
 	if( !gcfg_hndonly )
 		render_surf(pContext, SURF_FRGND, CAIRO_OPERATOR_OVER);
 
-	if( !appStart && gRun.evalDraws )
+/*	if( !appStart && gRun.evalDraws ) // TODO: turning this on now crashes the app
 	{
 		double xb, yb, xe, ye;
 
@@ -836,7 +865,7 @@ void draw::render(cairo_t* pContext, double scaleX, double scaleY, bool renderIt
 		}
 
 		cairo_stroke(pContext);
-	}
+	}*/
 
 #ifdef _DRAWINPMASK
 	if( g_pShapeBitmap )
@@ -955,7 +984,8 @@ bool draw::render_cbase(cairo_t* pContext, int width, int height, bool bright)
 		if( maskd )
 		{
 			cairo_save(pContext);
-			cairo_scale(pContext, g_wratio, g_hratio);
+//			cairo_scale(pContext, g_wratio, g_hratio);
+			cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 			cairo_set_operator(pContext, bright ? CAIRO_OPERATOR_LIGHTEN : CAIRO_OPERATOR_OVER);
 
 			g_bit_lock(&g_pSvgHandleLock, CLOCK_MASK);
@@ -981,7 +1011,8 @@ bool draw::render_cbase(cairo_t* pContext, int width, int height, bool bright)
 //	cairo_set_operator(pContext, CAIRO_OPERATOR_OVER);
 
 	cairo_save (pContext);
-	cairo_scale(pContext, g_wratio, g_hratio);
+//	cairo_scale(pContext, g_wratio, g_hratio);
+	cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 //	cairo_set_source_rgba(pContext, 1.0, 1.0, 1.0, 0.0); // transparent white
 	cairo_set_operator(pContext, bright ? CAIRO_OPERATOR_LIGHTEN : CAIRO_OPERATOR_OVER);
 //	cairo_paint(pContext);
@@ -1022,28 +1053,29 @@ bool draw::render_bkgnd(cairo_t* pContext, int width, int height, bool bright, b
 {
 	DEBUGLOGB;
 
+	double wratio = temp ? 1 : (double)width /(double)gCfg.clockW;
+	double hratio = temp ? 1 : (double)height/(double)gCfg.clockH;
+
 	cairo_save (pContext);
-	cairo_scale(pContext, (double)width/(double)gCfg.clockW, (double)height/(double)gCfg.clockH);
+//	cairo_scale(pContext, (double)width/(double)gCfg.clockW, (double)height/(double)gCfg.clockH);
+	cairo_scale(pContext, wratio, hratio);
 
 	SurfLockBeg(SURF_CBASE);
 
-	cairo_surface_t* pCBaseSurf = temp ? g_pCairoTemp[SURF_CBASE] : g_pCairoSurf[SURF_CBASE];
-//	bool okay = g_pCairoSurf[SURF_CBASE] != NULL && !(gCfg.faceDate && date && gRun.textonly);
-	bool okay = pCBaseSurf != NULL && !(gCfg.faceDate && date && gRun.textonly);
+	cairo_surface_t* pCBaseSurf  = temp ?    g_temps[SURF_CBASE].pCairoSurf : g_surfs[SURF_CBASE].pCairoSurf;
+	bool okay =      pCBaseSurf != NULL && !(gCfg.faceDate && date && gRun.textonly);
 
 	cairo_set_operator(pContext, okay ? CAIRO_OPERATOR_SOURCE : CAIRO_OPERATOR_CLEAR);
 
 	if( okay )
-	{
-//		cairo_set_source_surface(pContext, g_pCairoSurf[SURF_CBASE], 0.0, 0.0);
 		cairo_set_source_surface(pContext, pCBaseSurf, 0.0, 0.0);
-	}
 
 	SurfLockEnd(SURF_CBASE);
 
 	cairo_paint(pContext);
 
-	cairo_scale(pContext, g_wratio, g_hratio);
+//	cairo_scale(pContext, g_wratio, g_hratio);
+	cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 	cairo_set_operator(pContext, bright ? CAIRO_OPERATOR_LIGHTEN : CAIRO_OPERATOR_OVER);
 
 	if( gCfg.faceDate && date )
@@ -1111,7 +1143,8 @@ bool draw::render_chand(cairo_t* pContext, int handElem, int shadElem, int width
 	double fHalfY =  center ? height*0.5 : height*0.5/g_yDiv;
 
 	cairo_translate(pContext, fHalfX, fHalfY); // rendered hand's origin is at the clock's center
-	cairo_scale (pContext,  g_wratio, g_hratio);
+//	cairo_scale(pContext,   g_wratio, g_hratio);
+	cairo_scale(pContext,  (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 	cairo_rotate(pContext, -G_PI*0.5);         // rendered hand's zero angle is at 12 o'clock
 
 	if( rotate <  0.0 )     // indicates a clock hand shadow - TODO: change this to something more appropriate
@@ -1216,7 +1249,8 @@ bool draw::render_frgnd(cairo_t* pContext, int width, int height, bool bright)
 
 	bool okay = false;
 
-	cairo_scale(pContext, g_wratio, g_hratio);
+//	cairo_scale(pContext, g_wratio, g_hratio);
+	cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 	cairo_set_source_rgba(pContext, 1.0, 1.0, 1.0, 0.0); // transparent white
 	cairo_set_operator(pContext, bright ? CAIRO_OPERATOR_LIGHTEN : CAIRO_OPERATOR_OVER);
 	cairo_paint(pContext);
@@ -1323,12 +1357,10 @@ void draw::render_hand_hl(cairo_t* pContext, int width, int height, double scale
 	double angRad =  rotate*pi2Rad;
 	double fHalfX =  g_svgClock.width *0.5;
 	double fHalfY =  g_svgClock.height*0.5;
-	useSurf      |=  g_pCairoSurf[st] != NULL;
+	useSurf      |=  g_surfs[st].pCairoSurf != NULL;
 
-//	SurfLockBeg(st);
 	SurfLockEnd(st);
 
-//	if( useSurf && g_pCairoSurf[st] )
 	if( useSurf )
 	{
 		double cx =  width *0.5;
@@ -1344,8 +1376,10 @@ void draw::render_hand_hl(cairo_t* pContext, int width, int height, double scale
 		{
 			const double hoffX =  hoff;
 			const double hoffY = -hoff;
-			const double sx    =  g_wratio;
-			const double sy    =  g_hratio;
+//			const double sx    =  g_wratio;
+//			const double sy    =  g_hratio;
+			const double sx    = (double)width /(double)g_svgClock.width;
+			const double sy    = (double)height/(double)g_svgClock.height;
 
 			cairo_translate(pContext, sx*(g_coffX+hoffX), sy*(g_coffY+hoffY));
 		}
@@ -1355,7 +1389,7 @@ void draw::render_hand_hl(cairo_t* pContext, int width, int height, double scale
 
 		render_surf(pContext, st, CAIRO_OPERATOR_OVER, -1, alf);
 
-		if( !appStart && gRun.evalDraws )
+/*		if( !appStart && gRun.evalDraws ) // TODO: turning this on now crashes the app
 		{
 			cairo_identity_matrix(pContext);
 			cairo_scale(pContext, g_wratio, g_hratio);
@@ -1369,14 +1403,15 @@ void draw::render_hand_hl(cairo_t* pContext, int width, int height, double scale
 			cairo_set_source_rgba(pContext, 0.2, 1, 0.2, 0.5);
 			cairo_rectangle(pContext, bbox[0], bbox[1], bbox[2]-bbox[0]+1, bbox[3]-bbox[1]+1);
 			cairo_stroke(pContext);
-		}
+		}*/
 	}
 	else
 	if( !optHand )
 	{
 //		cairo_identity_matrix(pContext);
 
-		cairo_scale(pContext, g_wratio, g_hratio);
+//		cairo_scale(pContext, g_wratio, g_hratio);
+		cairo_scale(pContext, (double)width/(double)g_svgClock.width, (double)height/(double)g_svgClock.height);
 		cairo_translate(pContext, fHalfX, fHalfY); // rendered hand's origin is at the clock's center
 		cairo_rotate(pContext, -G_PI*0.5);         // rendered hand's zero angle is at 12 o'clock
 		render_hand(pContext, handElem, shadElem, hoff, -hoff, angRad);
@@ -1444,20 +1479,20 @@ void draw::render_surf(cairo_t* pContext, enum SurfaceType st, cairo_operator_t 
 
 	SurfLockBeg(st);
 
-	if( g_pCairoSurf[st] )
+	if( g_surfs[st].pCairoSurf )
 	{
 		DEBUGLOGS("surface available");
 		cairo_set_operator(pContext, op1);
 
-		if( g_pCairoPtrn[st] )
+		if( g_surfs[st].pCairoPtrn )
 		{
 			DEBUGLOGS("pattern available");
-			cairo_set_source(pContext, g_pCairoPtrn[st]);
+			cairo_set_source(pContext, g_surfs[st].pCairoPtrn);
 		}
 		else
 		{
 			DEBUGLOGS("no pattern available");
-			cairo_set_source_surface(pContext, g_pCairoSurf[st], 0.0, 0.0);
+			cairo_set_source_surface(pContext, g_surfs[st].pCairoSurf, 0.0, 0.0);
 		}
 	}
 	else
@@ -1699,7 +1734,7 @@ void draw::update_bkgnd()
 
 		SurfLockBeg(SURF_BKGND);
 
-		cairo_t* pContext = g_pCairoSurf[SURF_BKGND] ? cairo_create(g_pCairoSurf[SURF_BKGND]) : NULL;
+		cairo_t* pContext = g_surfs[SURF_BKGND].pCairoSurf ? cairo_create(g_surfs[SURF_BKGND].pCairoSurf) : NULL;
 
 		if( pContext && cairo_status(pContext) == CAIRO_STATUS_SUCCESS )
 		{
@@ -1723,7 +1758,7 @@ void draw::update_date_surf()
 
 	SurfLockBeg(st);
 
-	cairo_surface_t* pSurface = g_pCairoSurf[st];
+	cairo_surface_t* pSurface = g_surfs[st].pCairoSurf;
 	cairo_t*         pContext = pSurface ? cairo_create(pSurface) : NULL;
 
 	if( pContext && cairo_status(pContext) == CAIRO_STATUS_SUCCESS )
@@ -1750,78 +1785,59 @@ void draw::update_date_surf()
 }
 
 // -----------------------------------------------------------------------------
-cairo_surface_t* draw::update_surface(cairo_surface_t* pOldSurface, cairo_t* pSourceContext, int width, int height, SurfaceType type, bool newSurf)
+bool draw::update_surface(cairo_t* pSourceContext, int width, int height, SurfaceType type)
 {
 	DEBUGLOGB;
 
-//	cairo_surface_t* pCurSurface = pOldSurface ? pOldSurface : cairo_get_target(pSourceContext);
-//	int              w           = cairo_image_surface_get_width (pCurSurface);
-//	int              h           = cairo_image_surface_get_height(pCurSurface);
-//	int              w           = cairo_xlib_surface_get_width (pCurSurface);
-//	int              h           = cairo_xlib_surface_get_height(pCurSurface);
+	g_temps[type].pCairoSurf =  NULL;
+	g_temps[type].width      =  width;
+	g_temps[type].height     =  height;
+	g_temps[type].svgRatW    = (double)width/ (double)g_svgClock.width;
+	g_temps[type].svgRatH    = (double)height/(double)g_svgClock.height;
 
-//	DEBUGLOGP("updating a drawing surface from (%d, %d) to (%d, %d)\n", w, h, width, height);
+	bool hand = type == SURF_HHAND || type == SURF_MHAND || type == SURF_SHAND  ||
+	            type == SURF_HHSHD || type == SURF_MHSHD || type == SURF_SHSHD;
 
-	cairo_surface_t* pNewSurface =  NULL;
-//	bool              newSurface = (pOldSurface == NULL)      || (width != g_surfaceW) || (height != g_surfaceH);
-	bool              newSurface = (pOldSurface == NULL)      || (width != g_surfaceW) || (height != g_surfaceH) || newSurf;
-	bool              hand       =  type        == SURF_HHAND ||  type  == SURF_MHAND  ||  type   == SURF_SHAND  ||
-	                                type        == SURF_HHSHD ||  type  == SURF_MHSHD  ||  type   == SURF_SHSHD;
-	if( newSurface )
+	DEBUGLOGS("destroying old and creating a new surface");
+	DEBUGLOGP("creating a new surface of type %d\n", type);
+
+//	int handW = width;
+//	if( hand )  width  /= (int)g_xDiv;
+
+	int handH = height;
+	if( hand )  height /= (int)g_yDiv;
+
+	g_temps[type].pCairoSurf = cairo_surface_create_similar(cairo_get_target(pSourceContext), CAIRO_CONTENT_COLOR_ALPHA, width, height);
+
+//	if( hand )  width   =  handW;
+	if( hand )  height  =  handH;
+
+	if( !g_temps[type].pCairoSurf || cairo_surface_status(g_temps[type].pCairoSurf) != CAIRO_STATUS_SUCCESS )
 	{
-		DEBUGLOGS("destroying old and creating a new surface");
-		DEBUGLOGP("creating a new surface of type %d\n", type);
+		g_temps[type].pCairoSurf = NULL;
 
-//		if( pOldSurface )
-//			cairo_surface_destroy(pOldSurface);
-
-//		int handW = width;
-//		if( hand )  width  /= (int)g_xDiv;
-
-		int handH = height;
-		if( hand )  height /= (int)g_yDiv;
-
-		pNewSurface = cairo_surface_create_similar(cairo_get_target(pSourceContext), CAIRO_CONTENT_COLOR_ALPHA, width, height);
-
-//		if( hand )  width   =  handW;
-		if( hand )  height  =  handH;
-
-		if( cairo_surface_status(pNewSurface) != CAIRO_STATUS_SUCCESS )
-		{
-			DEBUGLOGE;
-			return NULL;
-		}
-
-//		DEBUGLOGP("created new surface of type %d\n", type);
-	}
-	else
-	{
-//		DEBUGLOGP("reusing the old surface as the new surface of type %d\n", type);
-		pNewSurface = pOldSurface;
+		DEBUGLOGE;
+		return false;
 	}
 
-	cairo_t* pContext = cairo_create(pNewSurface);
+//	DEBUGLOGP("created new surface of type %d\n", type);
+
+	cairo_t* pContext = cairo_create(g_temps[type].pCairoSurf);
 
 	if( !pContext || cairo_status(pContext) != CAIRO_STATUS_SUCCESS )
 	{
 //		DEBUGLOGP("failed to create a context using the new surface of type %d\n", type);
+//		DEBUGLOGP("new surface of type %d was valid - so what went wrong?\n", type);
 
-		if( newSurface )
-		{
-//			DEBUGLOGP("new surface of type %d was valid - so what went wrong?\n", type);
-			cairo_surface_destroy(pNewSurface);
-
-			DEBUGLOGE;
-			return NULL;
-		}
-
-//		DEBUGLOGP("new surface of type %d was null!\n", type);
+		cairo_surface_destroy(g_temps[type].pCairoSurf);
+		g_temps[type].pCairoSurf = NULL;
 
 		DEBUGLOGE;
-		return pOldSurface;
+		return false;
 	}
 
 //	DEBUGLOGP("clearing the context using the new surface of type %d\n", type);
+
 	cairo_set_operator(pContext, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(pContext);
 
@@ -1842,17 +1858,6 @@ cairo_surface_t* draw::update_surface(cairo_surface_t* pOldSurface, cairo_t* pSo
 	if( !okay )
 	{
 //		DEBUGLOGP("bad render to new surface of type %d\n", type);
-
-		if( pNewSurface != pOldSurface )
-		{
-//			DEBUGLOGP("using cleared new surface as new surface of type %d\n", type);
-//			cairo_surface_destroy(pNewSurface);
-		}
-		else
-		{
-//			DEBUGLOGP("using cleared old surface as new surface of type %d\n", type);
-//			pNewSurface = pOldSurface;
-		}
 	}
 	else
 	{
@@ -1863,7 +1868,7 @@ cairo_surface_t* draw::update_surface(cairo_surface_t* pOldSurface, cairo_t* pSo
 	pContext = NULL;
 
 	DEBUGLOGE;
-	return pNewSurface;
+	return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -1876,43 +1881,11 @@ bool draw::update_surf(cairo_t* pContext, SurfaceType st, int width, int height)
 
 	g_thread_yield();
 
-//	bool newSurf = (g_pCairoSurf[st] == NULL) || (width != g_surfaceW) || (height != g_surfaceH);
-	bool newSurf = true;
-
-/*	if( !newSurf )
-		SurfLockBeg(st);*/
-
-//	cairo_pattern_destroy(g_pCairoPtrn[st]);
-
-//	g_pCairoSurf[st] = update_surface(g_pCairoSurf[st], pContext, width, height, st);
-//	cairo_surface_t* pCS = update_surface(g_pCairoSurf[st], pContext, width, height, st);
-	g_pCairoTemp[st] = update_surface(g_pCairoSurf[st], pContext, width, height, st, newSurf);
-
-/*	if( !newSurf )
-		SurfLockEnd(st);*/
-
-/*	if( newSurf )
-		SurfLockBeg(st);
-
-	if( pCS && pCS != g_pCairoSurf[st] )
-	{
-		if( g_pCairoSurf[st] )
-			cairo_surface_destroy(g_pCairoSurf[st]);
-//		if( g_pCairoPtrn[st] )
-//			cairo_pattern_destroy(g_pCairoPtrn[st]);
-		g_pCairoSurf[st] = pCS;
-	}
-
-	if( g_pCairoPtrn[st] )
-		cairo_pattern_destroy(g_pCairoPtrn[st]);
-
-	g_pCairoPtrn[st] = g_pCairoSurf[st] ?  cairo_pattern_create_for_surface(g_pCairoSurf[st]) : NULL;
-
-	bool okay = g_pCairoSurf[st] != NULL;
-
-	SurfLockEnd(st);*/
+	bool okay = update_surface(pContext, width, height, st);
 
 	DEBUGLOGE;
+
+//	return g_temps[st].pCairoSurf != NULL;
 //	return okay;
 	return true;
 }
@@ -1930,8 +1903,10 @@ void draw::update_surfs(GtkWidget* pWidget, int width, int height)
 //	TODO: these need to be local vars and passed around until all surfs are
 //        rebuilt and swapped new for old below
 
-	g_wratio = (double)width/ (double)g_svgClock.width;
-	g_hratio = (double)height/(double)g_svgClock.height;
+/*	g_wratio = (double)width/ (double)g_svgClock.width;
+	g_hratio = (double)height/(double)g_svgClock.height;*/
+	double g_wratio = (double)width/ (double)g_svgClock.width;
+	double g_hratio = (double)height/(double)g_svgClock.height;
 
 	DEBUGLOGP("surfaces=%dx%d, svgs=%dx%d, ratios=%4.4f & %4.4f\n",
 		width, height, g_svgClock.width, g_svgClock.height, (float)g_wratio, (float)g_hratio);
@@ -1958,8 +1933,6 @@ void draw::update_surfs(GtkWidget* pWidget, int width, int height)
 		update_surf(pContext, SURF_SHSHD, width, height);
 	}
 
-//	gRun.updateSurfs = false;
-
 	if( bokay && fokay )
 	{
 		DEBUGLOGP("setting surface dims to (%d,%d)\n", width, height);
@@ -1971,38 +1944,40 @@ void draw::update_surfs(GtkWidget* pWidget, int width, int height)
 	cairo_destroy(pContext);
 	pContext = NULL;
 
-//	TODO: should all surfs be locked now instead of one at a time?
-//        that would get rid of the 'flicker'ing sometimes seen when changing
-//        themes (I think) - would need a separate locking mechanism though,
-//        since only one surf may be locked at a time via surfLockBeg
+	DEBUGLOGE;
+}
 
-	cairo_pattern_t* pCairoPtrn[SURF_COUNT];
-
+// -----------------------------------------------------------------------------
+void draw::update_surfs_swap(int width, int height)
+{
 	for( size_t st = 0; st < SURF_COUNT; st++ )
 	{
-		pCairoPtrn[st] = g_pCairoTemp[st] ? cairo_pattern_create_for_surface(g_pCairoTemp[st]) : NULL;
+		g_temps[st].pCairoPtrn = g_temps[st].pCairoSurf ? cairo_pattern_create_for_surface(g_temps[st].pCairoSurf) : NULL;
 	}
 
 	for( size_t st = 0; st < SURF_COUNT; st++ )
 	{
 		SurfLockBeg(st);
 
-		if( g_pCairoPtrn[st] )
-			cairo_pattern_destroy(g_pCairoPtrn[st]);
+		if( g_surfs[st].pCairoPtrn )
+			cairo_pattern_destroy(g_surfs[st].pCairoPtrn);
 
-		if( g_pCairoSurf[st] && (g_pCairoTemp[st] != g_pCairoSurf[st]) )
-			cairo_surface_destroy(g_pCairoSurf[st]);
+		if( g_surfs[st].pCairoSurf && (g_temps[st].pCairoSurf != g_surfs[st].pCairoSurf) )
+			cairo_surface_destroy(g_surfs[st].pCairoSurf);
 
-		g_pCairoSurf[st] = g_pCairoTemp[st];
-		g_pCairoPtrn[st] =   pCairoPtrn[st];
-		g_pCairoTemp[st] =   NULL;
+		g_surfs[st]            =  g_temps[st];
+
+		g_temps[st].pCairoSurf =  NULL;
+		g_temps[st].pCairoPtrn =  NULL;
+		g_temps[st].width      =  0;
+		g_temps[st].height     =  0;
+		g_temps[st].svgRatW    =  0;
+		g_temps[st].svgRatH    =  0;
 
 		SurfLockEnd(st);
 	}
 
 	gRun.updateSurfs = false;
-
-	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------

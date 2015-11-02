@@ -9,7 +9,7 @@
 #define   DEBUGNSP   "util"
 
 #include <stdio.h>   // for file functions
-#include <unistd.h>  // for file functions
+#include <unistd.h>  // for file functions & nice
 #include <gtk/gtk.h>
 
 #include "cfgdef.h"  // for APP_NAME

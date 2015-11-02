@@ -16,14 +16,19 @@
 #include "themes.h"  // for ThemeList, ThemeEntry definitions
 
 // -----------------------------------------------------------------------------
+#define  _USEMTHREADS // working for the most part but not quite perfect yet
+#undef   _USEWKSPACE  // working? appears to cause system hangs, so, no
+
 #define   MIN_CWIDTH        32
 #define   MIN_CHEIGHT       32
 #define   MIN_REFRESH_RATE   1
 #define   MAX_REFRESH_RATE  60
 #define   INTERNAL_THEME   "<simple>" // TODO: should be <default> instead?
 
-#define  _USEMTHREADS // working for the most part but not quite perfect yet
-#undef   _USEWKSPACE  // working? appears to cause system hangs, so, no
+// TODO:  move main funcs that use these to global?
+#define   drawPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH)/2
+#define   infoPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH_IDLE)/2
+#define   waitPrio (G_PRIORITY_HIGH_IDLE)
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
