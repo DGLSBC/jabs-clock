@@ -805,11 +805,6 @@ void gui::on_composited_changed(GtkWidget* pWidget, gpointer userData)
 	DEBUGLOGB;
 	DEBUGLOGF("%s\n", "entry");
 
-/*	gRun.drawScaleX  = gRun.drawScaleY = 1;
-	gRun.updateSurfs = true;
-
-	update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, true);
-	gtk_widget_queue_draw(pWidget);*/
 	update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, true);
 
 	DEBUGLOGF("%s\n", "exit");
@@ -828,17 +823,20 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 	gint newY = pEvent->y;
 	gint newW = pEvent->width;
 	gint newH = pEvent->height;
-
-/*	gint                                          oldX,  oldY;
+/*
+#ifdef DEBUGLOG
+	gint                                          oldX,  oldY;
 	gint                                          oldW,  oldH;
 	gtk_window_get_position(GTK_WINDOW(pWidget), &oldX, &oldY);
 	gtk_window_get_size    (GTK_WINDOW(pWidget), &oldW, &oldH);
 
-	DEBUGLOGP("oldX=%d, oldY=%d, oldW=%d, oldH=%d\n", oldX, oldY, oldW, oldH);*/
+	DEBUGLOGP("oldX=%d, oldY=%d, oldW=%d, oldH=%d\n", oldX, oldY, oldW, oldH);
+#endif*/
 	DEBUGLOGP("newX=%d, newY=%d, newW=%d, newH=%d\n", newX, newY, newW, newH);
 
 	if( newX != gCfg.clockX || newY != gCfg.clockY )
 	{
+#ifdef  DEBUGLOG
 		static int n = 0;
 		DEBUGLOGP("position change # %d: newX=%d, newY=%d\n", ++n, newX, newY);
 
@@ -852,7 +850,7 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 
 		DEBUGLOGP("position change # %d (%d, %d, %d.%d, %d.%d)\n", ++n, (int)pg, (int)et, (int)ct.tv_sec, (int)ct.tv_usec, (int)bt.tv_sec, (int)bt.tv_usec);
 		bt = ct;*/
- 
+#endif
 		gCfg.clockX = newX;
 		gCfg.clockY = newY;
 
@@ -877,32 +875,30 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 
 	if( newW != gCfg.clockW || newH != gCfg.clockH )
 	{
+#ifdef  DEBUGLOG
 		static int n = 0;
 		DEBUGLOGP("size change # %d: newW=%d, newH=%d\n", ++n, newW, newH);
-
-////		gRun.updateSurfs = true;
-
-/*		if( newW != gCfg.clockW )
-			newH  = newW;
-		else
-			newW  = newH;*/
-
-////		update_input_shape(pWidget, newW, newH, true);
-
+#endif
 		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
 		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
 
 		DEBUGLOGP("new sz: old(%d %d), new(%d %d), scl(%f %f)\n",
 			gCfg.clockW, gCfg.clockH, newW, newH, gRun.drawScaleX, gRun.drawScaleY);
 
-/*		gCfg.clockW = newW;
-		gCfg.clockH = newH;*/
-
 		if( pGladeXml )
 		{
 			prefs::open(true);
 
 			GtkWidget* pWidget;
+
+			Settings  tcfg = gCfg;
+			cfg::cnvp(tcfg,  true);
+
+			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonX") )
+				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockX);
+
+			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonY") )
+				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockY);
 
 			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonWidth") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), gCfg.clockW);
@@ -990,9 +986,6 @@ void gui::on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gi
 						GString* pP = g_string_new(tpath);
 						GString* pN = g_string_new(tname);
 
-//						strvcpy(gCfg.themePath, tpath);
-//						strvcpy(gCfg.themeFile, tname);
-
 						DEBUGLOGP("current theme to use is\n*%s%s*\n", gCfg.themePath, gCfg.themeFile);
 
 						update = true;
@@ -1001,13 +994,8 @@ void gui::on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gi
 						ThemeEntry    te = { pP, pN };
 						change_theme(&te,  pWidget);
 
-//						update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, false);
-/*						update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, true);
-						gtk_widget_queue_draw(pWidget);
-						cfg::save();*/
-
-						g_string_free(pP, TRUE);
-						g_string_free(pN, TRUE);
+						g_string_free(pP,  TRUE);
+						g_string_free(pN,  TRUE);
 					}
 					else
 					{
@@ -1067,9 +1055,11 @@ gboolean gui::on_expose(GtkWidget* pWidget, GdkEventExpose* pExpose)
 	DEBUGLOGB;
 	DEBUGLOGP("entry - %d upcoming exposes\n", pExpose->count);
 
+#ifdef  DEBUGLOG
 	static int ct = 0;
 //	if( ct < 10 ) DEBUGLOGP("rendering(%d)\n", ++ct);
 	DEBUGLOGP("rendering(%d)\n", ++ct);
+#endif
 
 	draw::render(pWidget, gRun.drawScaleX, gRun.drawScaleY, gRun.renderIt, gRun.appStart, gCfg.clockW, gCfg.clockH, gRun.appStart);
 
@@ -1672,11 +1662,6 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 
 					change_theme(&te, pWidget);
 
-//					update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, false);
-/*					update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, true);
-					gtk_widget_queue_draw(pWidget);
-					cfg::save();*/
-
 					if( g_pGladeXml )
 					{
 						GtkWidget* pWidget = glade_xml_get_widget(g_pGladeXml, "comboboxTheme");
@@ -1704,14 +1689,6 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 			if( newH == gCfg.clockH )
 				newH =  gCfg.clockH + delta;
 
-/*			gRun.drawScaleX  = gRun.drawScaleY = 1;
-			gRun.updateSurfs = true;
-			gCfg.clockW      = newW;
-			gCfg.clockH      = newH;
-
-			gtk_window_resize(GTK_WINDOW(pWidget), newW, newH);
-			update_input_shape(pWidget, newW, newH, true);
-			gtk_widget_queue_draw(pWidget);*/
 			update_wnd_dim(pWidget, newW, newH, false);
 			cfg::save();
 		}
@@ -1836,6 +1813,8 @@ void gui::wndSizeEnter(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdg
 	if( g_wndSizeT )
 		g_source_remove(g_wndSizeT);
 
+	// TODO: need to add in screen center testing
+
 	double  xc = (double)gCfg.clockW*0.5;
 	double  yc = (double)gCfg.clockH*0.5;
 	bool    q1 =  pButton->x >= xc && pButton->y <= yc;
@@ -1896,13 +1875,6 @@ void gui::wndSizeExit(GtkWidget* pWidget)
 
 		DEBUGLOGP("setting new window size (%d, %d)\n", newW, newH);
 
-/*		gRun.drawScaleX  = gRun.drawScaleY = 1;
-		gRun.updateSurfs = true;
-		gCfg.clockW      = newW;
-		gCfg.clockH      = newH;
-
-		update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, true);
-		gtk_widget_queue_draw(pWidget);*/
 		update_wnd_dim(pWidget, newW, newH, true);
 		cfg::save();
 	}

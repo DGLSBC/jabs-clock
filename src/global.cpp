@@ -94,7 +94,6 @@ static void change_theme_end(gpointer data, const char* path, const char* file, 
 	ChangeTheme* pCT = (ChangeTheme*)data;
 
 	gdk_threads_enter();
-//	GtkWidget* pWindow = (GtkWidget*)data;
 	GtkWidget* pWindow = pCT->pWindow;
 	bool       gotWind = pWindow && gtk_widget_get_has_window(pWindow);
 	gdk_threads_leave();
@@ -107,8 +106,7 @@ static void change_theme_end(gpointer data, const char* path, const char* file, 
 		gtk_widget_queue_draw(pWindow);
 		gdk_threads_leave();
 
-//		if( gRun.updateSurfs )
-		if( pCT->updateSurfs )
+		if( pCT->updateSurfs ) // TODO: when would this ever NOT be set when theme changing?
 		{
 			DEBUGLOGS("updating surfaces");
 
@@ -121,17 +119,14 @@ static void change_theme_end(gpointer data, const char* path, const char* file, 
 			draw::update_surfs_swap(gCfg.clockW, gCfg.clockH);
 			gdk_threads_leave();
 
-//			gdk_threads_enter();
-//			update_input_shape(pWindow, gCfg.clockW, gCfg.clockH, true, true);
 			update_input_shape(pWindow, gCfg.clockW, gCfg.clockH, false, true, true);  // masks only
-//			gdk_threads_leave();
 
 			gdk_threads_enter();
 			gtk_widget_queue_draw(pWindow);
 			gdk_window_process_updates(pWindow->window, TRUE);
 			gdk_threads_leave();
 
-//			cfg::save();
+//			cfg::save(); // TODO: needed here?
 		}
 	}
 
@@ -150,7 +145,7 @@ static void change_theme_end(gpointer data, const char* path, const char* file, 
 			make_theme_icon(pWindow);
 			gdk_threads_leave();
 
-//			gRun.renderUp = true;
+//			gRun.renderUp = true; // TODO: needed here?
 		}
 
 		cfg::save();
@@ -179,7 +174,6 @@ void change_theme(ThemeEntry* pEntry, GtkWidget* pWindow)
 		ct.pWindow     = pWindow;
 		ct.updateSurfs = gRun.updateSurfs;
 
-//		bool valid = draw::update_theme(pEntry->pPath->str, pEntry->pFile->str, change_theme_end, pWindow);
 		bool valid = draw::update_theme(pEntry->pPath->str, pEntry->pFile->str, change_theme_end, &ct);
 
 		DEBUGLOGP("theme updating start is %s\n", valid ? "'valid'" : "not 'valid'");
@@ -197,7 +191,7 @@ void change_theme(ThemeEntry* pEntry, GtkWidget* pWindow)
 
 		gtk_widget_queue_draw(pWindow);
 
-		if( gRun.updateSurfs )
+		if( gRun.updateSurfs ) // TODO: when would this ever NOT be set when theme changing?
 		{
 			DEBUGLOGS("updating surfaces");
 			gdk_window_process_updates(pWindow->window, TRUE);
@@ -894,76 +888,33 @@ static gpointer update_wnd_dim_func(gpointer data)
 	DEBUGLOGP(" cfg clock  dims of (%d, %d)\n",       gCfg.clockW,     gCfg.clockH);
 	DEBUGLOGP(" new drawScales  of (%4.4f, %4.4f)\n", gRun.drawScaleX, gRun.drawScaleY);
 
+	// resize using 'stretched' clock surfs after main thread pausing
+
 	gdk_threads_enter();
 	gtk_window_resize(GTK_WINDOW(pWindow), width, height);
-//	gdk_threads_leave();
-
-//	gdk_threads_enter();
 	gdk_window_process_updates(pWindow->window, TRUE);
 	gdk_threads_leave();
 
-//	TODO: need to update surfs/masks into a new 'holding area',
-//        switch to them once they're all done, destroy the old ones,
-//        then redraw (after updating size-related vars as well)
-
-	gRun.updateSurfs =  true;
-//	gRun.drawScaleX  =  gRun.drawScaleY = 1;
+	gRun.updateSurfs = true;
 	update_input_shape(pWindow, width, height, true, false, false); // surfs only
+	gRun.drawScaleX  = gRun.drawScaleY = 1;
 
-	gRun.drawScaleX  =  gRun.drawScaleY = 1;
-//	gRun.updateSurfs =  true;
-//	gCfg.clockW      =  width;
-//	gCfg.clockH      =  height;
-
-	// swap the new surfs for the old after pausing the main thread
+	// swap new surfs for old after main thread pausing
 
 	gdk_threads_enter();
 	draw::update_surfs_swap(width, height);
 	gdk_threads_leave();
 
-//	update_input_shape(pWindow, width, height, true, false), false; // surfs only
-/*
-	gdk_threads_enter();
-	update_input_shape(pWindow, width, height, true, false, false); // surfs only
-	gdk_threads_leave();
-*/
-//	gdk_threads_enter();
 	update_input_shape(pWindow, width, height, false, true, true);  // masks only
-//	gdk_threads_leave();
 
-//	gRun.drawScaleX  =  gRun.drawScaleY = 1;
-//	gRun.updateSurfs =  true;
-	gCfg.clockW      =  width;
-	gCfg.clockH      =  height;
-/*
-	gdk_threads_enter();
-	gdk_window_process_updates(pWindow->window, TRUE);
-	gdk_threads_leave();
-*/
+	gCfg.clockW = width;
+	gCfg.clockH = height;
+
 	gdk_threads_enter();
 	gtk_widget_queue_draw(pWindow);
 	gdk_window_process_updates(pWindow->window, TRUE);
 	gdk_threads_leave();
-/*
-//	TODO: Workaround for now to solve above problem that hasn't been fixed yet
-//	gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpointer userData)
-//	struct GdkEventScroll       { GdkEventType type; GdkWindow *window; gint8 send_event; guint32 time; gdouble x; gdouble y; guint state; GdkScrollDirection direction; GdkDevice *device; gdouble x_root, y_root; };
-	static GdkEventScroll seu = { GDK_SCROLL,        0,                 TRUE,             0,            0,         0,         0,           GDK_SCROLL_UP,                0,                 0,              0 };
-	static GdkEventScroll sed = { GDK_SCROLL,        0,                 TRUE,             0,            0,         0,         0,           GDK_SCROLL_DOWN,              0,                 0,              0 };
-	static gboolean       ret =   FALSE;
 
-	seu.window = sed.window = pWindow->window;
-	g_signal_emit_by_name(pWindow, "scroll-event", (GdkEvent*)&seu, &ret);
-	g_signal_emit_by_name(pWindow, "scroll-event", (GdkEvent*)&sed, &ret);
-*/
-	gdk_threads_enter();
-	update_wnd_dim(pWindow, width, height, false);
-	gdk_threads_leave();
-/*
-	gdk_threads_enter();
-	gtk_widget_queue_draw(pWindow);
-	gdk_threads_leave();
-*/
 	DEBUGLOGE;
 	return 0;
 }
@@ -1139,4 +1090,15 @@ int main(int argc, char* argv[])
 
 	return 0;
 }*/
+/*
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+//	struct GdkEventScroll       { GdkEventType type; GdkWindow *window; gint8 send_event; guint32 time; gdouble x; gdouble y; guint state; GdkScrollDirection direction; GdkDevice *device; gdouble x_root, y_root; };
+	static GdkEventScroll seu = { GDK_SCROLL,        0,                 TRUE,             0,            0,         0,         0,           GDK_SCROLL_UP,                0,                 0,              0 };
+	static GdkEventScroll sed = { GDK_SCROLL,        0,                 TRUE,             0,            0,         0,         0,           GDK_SCROLL_DOWN,              0,                 0,              0 };
+	static gboolean       ret =   FALSE;
+
+	seu.window = sed.window = pWindow->window;
+	g_signal_emit_by_name(pWindow, "scroll-event", (GdkEvent*)&seu, &ret);
+	g_signal_emit_by_name(pWindow, "scroll-event", (GdkEvent*)&sed, &ret);*/
 

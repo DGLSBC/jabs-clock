@@ -1955,26 +1955,39 @@ void draw::update_surfs_swap(int width, int height)
 		g_temps[st].pCairoPtrn = g_temps[st].pCairoSurf ? cairo_pattern_create_for_surface(g_temps[st].pCairoSurf) : NULL;
 	}
 
+	DrawSurf backs[SURF_COUNT];
+
+	for( size_t st = 0; st < SURF_COUNT; st++ )
+	{
+		backs[st] = g_surfs[st];
+	}
+
 	for( size_t st = 0; st < SURF_COUNT; st++ )
 	{
 		SurfLockBeg(st);
-
-		if( g_surfs[st].pCairoPtrn )
-			cairo_pattern_destroy(g_surfs[st].pCairoPtrn);
-
-		if( g_surfs[st].pCairoSurf && (g_temps[st].pCairoSurf != g_surfs[st].pCairoSurf) )
-			cairo_surface_destroy(g_surfs[st].pCairoSurf);
-
-		g_surfs[st]            =  g_temps[st];
-
-		g_temps[st].pCairoSurf =  NULL;
-		g_temps[st].pCairoPtrn =  NULL;
-		g_temps[st].width      =  0;
-		g_temps[st].height     =  0;
-		g_temps[st].svgRatW    =  0;
-		g_temps[st].svgRatH    =  0;
-
+		g_surfs[st] = g_temps[st];
 		SurfLockEnd(st);
+	}
+
+	for( size_t st = 0; st < SURF_COUNT; st++ )
+	{
+		if( backs[st].pCairoPtrn && (g_temps[st].pCairoPtrn != backs[st].pCairoPtrn) )
+			cairo_pattern_destroy(backs[st].pCairoPtrn);
+
+		if( backs[st].pCairoSurf && (g_temps[st].pCairoSurf != backs[st].pCairoSurf) )
+			cairo_surface_destroy(backs[st].pCairoSurf);
+	}
+
+	backs[0].pCairoSurf =  NULL;
+	backs[0].pCairoPtrn =  NULL;
+	backs[0].width      =  0;
+	backs[0].height     =  0;
+	backs[0].svgRatW    =  0;
+	backs[0].svgRatH    =  0;
+
+	for( size_t st = 0; st < SURF_COUNT; st++ )
+	{
+		g_temps[st] = backs[0];
 	}
 
 	gRun.updateSurfs = false;
