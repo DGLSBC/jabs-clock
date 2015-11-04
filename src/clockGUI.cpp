@@ -1689,7 +1689,8 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 			if( newH == gCfg.clockH )
 				newH =  gCfg.clockH + delta;
 
-			update_wnd_dim(pWidget, newW, newH, false);
+//			update_wnd_dim(pWidget, newW, newH, false);
+			update_wnd_dim(pWidget, newW, newH, true);
 			cfg::save();
 		}
 	}
