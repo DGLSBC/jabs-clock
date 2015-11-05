@@ -819,6 +819,9 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 {
 	DEBUGLOGB;
 
+	Settings    tcfg;
+//	GtkWidget*  pWidget; // NOTE: stepping on passed in pWidget instead of using local, so actual window widget is no longer available
+
 	gint newX = pEvent->x;
 	gint newY = pEvent->y;
 	gint newW = pEvent->width;
@@ -832,9 +835,35 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 
 	DEBUGLOGP("oldX=%d, oldY=%d, oldW=%d, oldH=%d\n", oldX, oldY, oldW, oldH);
 #endif*/
+
 	DEBUGLOGP("newX=%d, newY=%d, newW=%d, newH=%d\n", newX, newY, newW, newH);
 
-	if( newX != gCfg.clockX || newY != gCfg.clockY )
+	bool newPos  = newX != gCfg.clockX  || newY != gCfg.clockY;
+	bool newSize = newW != gCfg.clockW  || newH != gCfg.clockH;
+	bool chgGUI  = pGladeXml && (newPos || newSize);
+
+	if( newSize )
+	{
+		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
+		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
+	}
+
+	if( chgGUI )
+	{
+		prefs::open(true);
+
+		tcfg = gCfg;
+
+		if( newSize )
+		{
+			tcfg.clockW *= gRun.drawScaleX;
+			tcfg.clockH *= gRun.drawScaleY;
+		}
+
+		cfg::cnvp(tcfg, true);
+	}
+
+	if( newPos )
 	{
 #ifdef  DEBUGLOG
 		static int n = 0;
@@ -854,66 +883,42 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 		gCfg.clockX = newX;
 		gCfg.clockY = newY;
 
-		if( pGladeXml )
+		if( chgGUI )
 		{
-			prefs::open(true);
-
-			GtkWidget* pWidget;
-
-			Settings  tcfg = gCfg;
-			cfg::cnvp(tcfg,  true);
-
 			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonX") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockX);
 
 			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonY") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockY);
-
-			prefs::open(false);
 		}
 	}
 
-	if( newW != gCfg.clockW || newH != gCfg.clockH )
+	if( newSize )
 	{
 #ifdef  DEBUGLOG
 		static int n = 0;
 		DEBUGLOGP("size change # %d: newW=%d, newH=%d\n", ++n, newW, newH);
 #endif
-		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
-		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
+//		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
+//		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
 
 		DEBUGLOGP("new sz: old(%d %d), new(%d %d), scl(%f %f)\n",
 			gCfg.clockW, gCfg.clockH, newW, newH, gRun.drawScaleX, gRun.drawScaleY);
 
-		if( pGladeXml )
+		if( chgGUI )
 		{
 			prefs::open(true);
 
-			GtkWidget* pWidget;
-
-			Settings  tcfg = gCfg;
-			cfg::cnvp(tcfg,  true);
-
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonX") )
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockX);
-
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonY") )
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockY);
-
 			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonWidth") )
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), gCfg.clockW);
+				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockW);
 
 			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonHeight") )
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), gCfg.clockH);
-
-			prefs::open(false);
+				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockH);
 		}
-
-		// TODO: can just redraw part of the clock window?
-		//       or can do stretching until resizing is over?
-
-////		gtk_widget_queue_draw(pWidget);
 	}
+
+	if( chgGUI )
+		prefs::open(false);
 
 	DEBUGLOGE;
 	return FALSE;
@@ -1052,7 +1057,7 @@ gboolean gui::on_enter_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, g
 // -----------------------------------------------------------------------------
 gboolean gui::on_expose(GtkWidget* pWidget, GdkEventExpose* pExpose)
 {
-	DEBUGLOGB;
+/*	DEBUGLOGB;
 	DEBUGLOGP("entry - %d upcoming exposes\n", pExpose->count);
 
 #ifdef  DEBUGLOG
@@ -1060,10 +1065,10 @@ gboolean gui::on_expose(GtkWidget* pWidget, GdkEventExpose* pExpose)
 //	if( ct < 10 ) DEBUGLOGP("rendering(%d)\n", ++ct);
 	DEBUGLOGP("rendering(%d)\n", ++ct);
 #endif
-
+*/
 	draw::render(pWidget, gRun.drawScaleX, gRun.drawScaleY, gRun.renderIt, gRun.appStart, gCfg.clockW, gCfg.clockH, gRun.appStart);
 
-	DEBUGLOGE;
+/*	DEBUGLOGE;*/
 	return FALSE;
 }
 
