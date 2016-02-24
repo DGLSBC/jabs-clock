@@ -1,0 +1,58 @@
+# jabs-clock
+Just A Basic SVG Clock - todo
+
+----
+
+In no particular order, here is a list of the 'things' currently being actively
+worked on. So this is probably more of a work-in-progress list than a todo list.
+
+--------------------------------------------------------------------------------
+- known bugs
+  o glade gui won't pass focus around
+  o clock not showing on Mate if initial opacity is anything < than 0.99999998
+    (this is a known compiz bug (I think) with a fix that needs to be applied)
+  o non-composite mode's background for translucent clock areas is not reset
+    on clock moves and resizings (during and after)
+  o ?
+
+- known annoyances
+  o non-composite mode's clock outline shaping is 'blocky' for 'large' clocks
+  o Mint Cinnamon and Mate clock blinks some when changing hand animation curve
+  o non-square clock causes hands to be unaligned with tic marks and second hand
+    to be too long (possibly clipped) when rotating along the short-axis edges
+  o second hand animation momentarily stops on any glade related use on slower
+    boxes (like mine), even after use and even for simple uses like popup menus
+  o resizing with a click 'near' the center should use center relative sizing,
+    i.e., the clock should expand/contract in radius rather than via a given
+    set of edges, but it currently does nothing other than change the cursor
+  o ?
+
+- feature requests
+  o get alarm use fully integrated into the app
+  o get time zone use fully integrated into the app
+  o need user-specified 12/24 formatting for all date/time related strings
+  o ?
+
+- code changes
+  o off-load all drawing to worker thread so slow glade gui loading/use doesn't
+    momentarily stop clock animation (most noticeable on slower boxes like mine)
+  o off-load drawing as well to make animation more precise and especially to
+    allow for non-linear redrawing time events to more accurately represent
+    hand animation curve changes, especially 'quick' directional changes
+  o need a better hand animation interpolation algorithm (than linear)
+    when gsl is not available (static simple light-weight cspline?)
+  o default alarm hand to a greyscale version of the hour hand
+  o get non-composite mode working as well as possible
+  o there's a number of known small annoyances to fix
+  o get sound use fully integrated into the app
+  o replace system call with libnotify use
+    (.so loaded ala canberra/etc. use)
+  o finish configuration
+  o finish settings gui
+  o ?
+
+- distro
+  o configure script
+  o install script
+  o ?
+

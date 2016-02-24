@@ -292,7 +292,7 @@
            d="M 0,-0.5625 L 0,0.5625 L 20.28125,0.5625 L 20.28125,-0.5625 L 0,-0.5625 z "
            id="path1551" />
         <rect
-           style="opacity:1;fill:#dfdfdf;fill-opacity:1;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0.06811402;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           style="opacity:1;fill:#000000;fill-opacity:0.1254902;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0.06811402;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
            id="rect1373"
            width="0.71431756"
            height="0.71448529"
@@ -314,7 +314,7 @@
          sodipodi:cy="0"
          sodipodi:cx="-0.0078125"
          id="path1370"
-         style="opacity:1;fill:#dfdfdf;fill-opacity:1;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         style="opacity:1;fill:#000000;fill-opacity:0.1254902;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:type="arc" />
     </g>
   </g>

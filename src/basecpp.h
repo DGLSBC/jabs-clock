@@ -9,9 +9,14 @@
 #define __basecpp_h__
 #include <cstring>
 
-#define   foreach(i, n) for( int i = 0; i < n; i++ )
-#define   vectsz(a)     sizeof(a)/sizeof(a[0])
+typedef   void*            ppointer;
+typedef   int              pboolean;
 
+#define   foreachv(i, n)   for( int i = 0; i < n; i++ )
+#define   vectsz(a)        sizeof(a)/sizeof(a[0])
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // strvXXX and strnxxx_safe functions based on the idea presented at:
 // https://randomascii.wordpress.com/2013/04/03/stop-using-strncpy-already/
 //

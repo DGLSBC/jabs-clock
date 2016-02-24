@@ -8,25 +8,24 @@
 #ifndef __clockGUI_h__
 #define __clockGUI_h__
 
-#include <glade/glade.h>
-#include "basecpp.h" // some useful macros and functions
+#include "platform.h" // platform specific
 
-namespace gui
+namespace cgui
 {
 
-bool   init();
-void   dnit(bool clrPopup=true);
+bool init();
+void dnit(bool clrPopup=true, bool unloadGUI=false);
 
-const  gchar* getGladeFilename();
+void initDragDrop();
 
-void   initDragDrop();
+void initWorkspace();
+void dnitWorkspace();
 
-void   initWorkspace();
-void   dnitWorkspace();
+#if _USEGTK
+void setPopup(GtkWidget* pPopupDlg, bool inPopup, char key);
+#endif
 
-extern GladeXML* pGladeXml;
-
-} // gui
+} // cgui
 
 #endif // __clockGUI_h__
 

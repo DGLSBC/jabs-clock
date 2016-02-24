@@ -4,14 +4,15 @@
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkAboutDialog" id="infoDialog">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Jabs-Clock - Information</property>
+    <property name="border_width">6</property>
+    <property name="title" translatable="yes">About for jabs-clock</property>
     <property name="resizable">False</property>
     <property name="window_position">center</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">normal</property>
     <property name="copyright" translatable="yes">© 2006 - 2007 Mirco "MacSlow" Müller
-© 2015 Darrell "pillbug" Leggett</property>
-    <property name="comments" translatable="yes">- Just Another Basic SVG Clock -
+© 2015-2016 Darrell Leggett (pillbug)</property>
+    <property name="comments" translatable="yes">• Just A Basic SVG Clock •
 A reworked enhancement of cairo-clock, an analog clock based on vector-graphics</property>
     <property name="website">https://github.com/DGLSBC/jabs-clock</property>
     <property name="website_label" translatable="yes">Website Home Page</property>
@@ -295,17 +296,18 @@ YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
 PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGES.</property>
     <property name="authors">
-maintainer:
+cairo-clock maintainer:
 Mirco "MacSlow" Müller &lt;macslow@bangang.de&gt;
 
-patches, general helping out:
+jabs-clock maintainer:
+Darrell Leggett (pillbug)
+
+cairo-clock patches, general helping out:
 Milosz "deadchip" Derezynski &lt;internalerror@gmail.com&gt;
 
 Darryll "Moppsy" Truchan &lt;moppsy@comcast.net&gt;
 
-Darrell "pillbug" Leggett
-
-packagers:
+cairo-clock packagers:
 many</property>
     <property name="documenters">
 Mirco "MacSlow" Müller
@@ -332,17 +334,21 @@ Darryll "Moppsy" Truchan &lt;moppsy@comcast.net&gt;
 
 gremlin, gremlin-24:
 Christian "ChipX86" Hammond &lt;chipx86@chipx86.com&gt;</property>
+    <property name="logo">./app.svg</property>
     <child internal-child="vbox">
       <widget class="GtkVBox" id="dialog-vbox3">
         <property name="can_focus">False</property>
         <child internal-child="action_area">
           <widget class="GtkHButtonBox" id="dialog-action_area3">
             <property name="can_focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout_style">end</property>
           </widget>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="padding">6</property>
+            <property name="position">-1</property>
           </packing>
         </child>
       </widget>

@@ -8,9 +8,16 @@
 #ifndef __chart_h__
 #define __chart_h__
 
-#include "basecpp.h" // some useful macros and functions
+#include "platform.h" // platform specific
 
-void chart_init(GtkWidget* pDrawingArea);
+namespace chart
+{
+
+#if _USEGTK
+void init(GtkWidget* pDrawingArea);
+#endif
+
+}
 
 #endif // __chart_h__
 

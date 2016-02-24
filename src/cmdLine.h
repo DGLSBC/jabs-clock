@@ -8,7 +8,7 @@
 #ifndef __cmdLine_h__
 #define __cmdLine_h__
 
-void cmdLine(int argc, char** argv, bool& prt_help, bool& prt_themes, bool& prt_version, bool& xscrn_saver);
+void cmdLine(int argc, char** argv, bool& prt_help, bool& prt_themes, bool& prt_version, bool& xscrn_saver, bool& square_up);
 
 #endif
 

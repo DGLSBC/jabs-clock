@@ -12,13 +12,15 @@
 *******************************************************************************/
 
 #undef    DEBUGLOG
-#define   DEBUGNSP   "thms"
+#define   DEBUGNSP     "thms"
 
-#include "cfgdef.h"
-#include "global.h"
-#include "themes.h"
-#include "utility.h"
-#include "strnatcmp.h"
+#include <glib.h>      // for ?
+
+#include "themes.h"    //
+#include "cfgdef.h"    // for ?
+#include "global.h"    // for ?
+#include "utility.h"   // for ?
+#include "strnatcmp.h" // for ?
 #include "debug.h"     // for debugging prints
 
 
@@ -154,6 +156,35 @@ void theme_list_del(ThemeList*& tl)
 }
 
 // -----------------------------------------------------------------------------
+void theme_ntry_cpy(ThemeEntry& td, const ThemeEntry& ts)
+{
+	const
+	GString*  strs[] = {  ts.pPath,       ts.pFile,       ts.pName,   ts.pAuthor,
+						  ts.pVersion,    ts.pInfo,       ts.pModes,
+						  ts.pTextColor,  ts.pShdoColor,  ts.pFillColor };
+	GString** strd[] = { &td.pPath,      &td.pFile,      &td.pName,  &td.pAuthor,
+						 &td.pVersion,   &td.pInfo,      &td.pModes,
+						 &td.pTextColor, &td.pShdoColor, &td.pFillColor };
+
+	for( size_t s = 0; s < vectsz(strs); s++ )
+		*strd[s]  = g_string_new(strs[s] && strs[s]->str ? strs[s]->str : "");
+}
+
+// -----------------------------------------------------------------------------
+void theme_ntry_del(ThemeEntry& te)
+{
+	GString*  strs[] = {  te.pPath,       te.pFile,       te.pName,   te.pAuthor,
+						  te.pVersion,    te.pInfo,       te.pModes,
+						  te.pTextColor,  te.pShdoColor,  te.pFillColor };
+
+	for( size_t s = 0; s < vectsz(strs); s++ )
+	{
+		if( strs[s] )
+			g_string_free(strs[s], TRUE);
+	}
+}
+
+// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 int get_theme_list(GList*& pThemes)
 {
@@ -178,9 +209,7 @@ int get_theme_list(GList*& pThemes)
 //static void delete_entry(gpointer themeEntry, gpointer data);
 static void delete_entry(gpointer themeEntry);
 
-static const  char* get_system_theme_path();
-
-static GList* get_theme_list(GString* pSystemPath, GString* pUserPath);
+static GList* get_theme_list(GString* pSystemPath, GString* pUserPath1, GString* pUserPath2);
 static void   get_theme_list(GString* pPath, GList** ppThemes);
 static int    get_theme_list_sort(gconstpointer themeEntry1, gconstpointer themeEntry2);
 
@@ -201,24 +230,35 @@ int get_theme_list()
 
 //	printf("%s(1): before theme path retrievals\n", __func__);
 
-	const char* upath  = get_user_theme_path  ();
-	const char* spath  = get_system_theme_path();
+	const char* upath  = get_user_theme_path();
 	GString*    gsupth = upath ? g_string_new(upath) : NULL;
+
+	const char* spath  = get_system_theme_path();
 	GString*    gsspth = spath ? g_string_new(spath) : NULL;
+
+	const char* opath  = get_user_old_theme_path();
+	GString*    gsopth = opath ? g_string_new(opath) : NULL;
 
 //	printf("%s(1): after theme path retrievals\n", __func__);
 //	printf("%s(1): upath=%s\n", __func__, upath);
 //	printf("%s(1): spath=%s\n", __func__, spath);
+//	printf("%s(1): opath=%s\n", __func__, opath);
 
 //	printf("%s(1): before theme list retrieval\n", __func__);
 
-	g_pThemeList = upath ? get_theme_list(gsspth, gsupth) : NULL;
+//	g_pThemeList = upath ? get_theme_list(gsspth, gsupth, gsopth) : NULL;
+	g_pThemeList = get_theme_list(gsspth, gsupth, gsopth);
 
 //	printf("%s(1): after theme list retrieval\n", __func__);
 
-	if( upath ) delete []     upath;
+	if( gsopth) g_string_free(gsopth, TRUE);
+	if( opath ) delete [] opath;
+
 	if( gsspth) g_string_free(gsspth, TRUE);
+//	if( spath ) delete [] spath;
+
 	if( gsupth) g_string_free(gsupth, TRUE);
+	if( upath ) delete [] upath;
 
 	GList* pThemeActiv = NULL;
 	GList* pThemeEntry = g_list_first(g_pThemeList);
@@ -233,18 +273,21 @@ int get_theme_list()
 
 	if( pEntry = new ThemeEntry )
 	{
-		pEntry->pPath    = g_string_new (INTERNAL_THEME);
-		pEntry->pFile    = g_string_new (INTERNAL_THEME);
-		pEntry->pName    = g_string_new ("<default>");
-		pEntry->pAuthor  = g_string_new ("Pillbug");
-		pEntry->pVersion = g_string_new ("1.0");
-		pEntry->pInfo    = g_string_new ("Internal fallback theme");
-		g_pThemeList     = g_list_append(g_pThemeList, (gpointer)pEntry);
+		pEntry->pPath      = g_string_new (INTERNAL_THEME);
+		pEntry->pFile      = g_string_new (INTERNAL_THEME);
+		pEntry->pName      = g_string_new ("<default>");
+		pEntry->pAuthor    = g_string_new ("pillbug");
+		pEntry->pVersion   = g_string_new ("1.0");
+		pEntry->pInfo      = g_string_new ("Internal fallback theme");
+		pEntry->pModes     = g_string_new ("12/24");
+		pEntry->pTextColor = g_string_new ("1.0;1.0;1.0");
+		pEntry->pShdoColor = g_string_new ("0.0;0.0;0.0");
+		pEntry->pFillColor = g_string_new ("0.5;0.5;0.5");
+		g_pThemeList       = g_list_append(g_pThemeList, (gpointer)pEntry);
 		g_themeCount++;
 	}
 
 //	printf("%s(1): theme count is %d\n", __func__, g_themeCount);
-
 //	printf("%s(1): exit\n", __func__);
 
 	return g_themeCount;
@@ -274,18 +317,17 @@ void delete_entry(gpointer themeEntry)
 
 		DEBUGLOGP("entry deleted for %s\n", pTE->pFile->str);
 
-		if( pTE->pFile )
-			g_string_free(pTE->pFile,    TRUE);
-		if( pTE->pPath )
-			g_string_free(pTE->pPath,    TRUE);
-		if( pTE->pName )
-			g_string_free(pTE->pName,    TRUE);
-		if( pTE->pAuthor )
-			g_string_free(pTE->pAuthor,  TRUE);
-		if( pTE->pVersion )
-			g_string_free(pTE->pVersion, TRUE);
-		if( pTE->pInfo )
-			g_string_free(pTE->pInfo,    TRUE);
+		GString* strs[] = { pTE->pPath,      pTE->pFile,      pTE->pName,  pTE->pAuthor,
+							pTE->pVersion,   pTE->pInfo,      pTE->pModes,
+							pTE->pTextColor, pTE->pShdoColor, pTE->pFillColor };
+
+		for( size_t s = 0; s < vectsz(strs); s++ )
+		{
+//			if( pTE->pFile )
+//				g_string_free(pTE->pFile, TRUE);
+			if( strs[s] )
+				g_string_free(strs[s], TRUE);
+		}
 
 		delete pTE; themeEntry = pTE = NULL;
 	}
@@ -293,22 +335,21 @@ void delete_entry(gpointer themeEntry)
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-const char* get_system_theme_path()
+GList* get_theme_list(GString* pSystemPath, GString* pUserPath1, GString* pUserPath2)
 {
-//	return PKGDATA_DIR "/themes";
-	return PKGDATA_DIR_OLD "/themes";
-}
-
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-GList* get_theme_list(GString* pSystemPath, GString* pUserPath)
-{
-//	printf("%s(2): entry\nspath sent as\n*%s*\nupath sent as\n*%s*\n", __func__, pSystemPath->str, pUserPath->str);
+//	printf("%s(2): entry\n\tspath sent as\n*%s*\n\tupath sent as\n*%s*\n\topath sent as\n*%s*\n",
+//		__func__, pSystemPath->str, pUserPath1->str, pUserPath2->str);
 
 	GList* pThemeList = NULL;
 
-	get_theme_list(pSystemPath, &pThemeList);
-	get_theme_list(pUserPath,   &pThemeList);
+	if( pSystemPath )
+		get_theme_list(pSystemPath, &pThemeList);
+
+	if( pUserPath1 )
+		get_theme_list(pUserPath1,  &pThemeList);
+
+	if( pUserPath2 )
+		get_theme_list(pUserPath2,  &pThemeList);
 
 	if( pThemeList )
 	{
@@ -390,9 +431,11 @@ void get_theme_list(GString* pPath, GList** ppThemes)
 
 //		DEBUGLOGS("(3) making a new theme list entry");
 
-		pEntry->pPath = g_string_new(pPath->str);
-		pEntry->pFile = g_string_new(pName);
-		pEntry->pName = pEntry->pAuthor = pEntry->pVersion = pEntry->pInfo = NULL;
+		pEntry->pPath      = g_string_new(pPath->str);
+		pEntry->pFile      = g_string_new(pName);
+		pEntry->pName      = pEntry->pAuthor    = NULL;
+		pEntry->pVersion   = pEntry->pInfo      = pEntry->pModes     = NULL;
+		pEntry->pTextColor = pEntry->pShdoColor = pEntry->pFillColor = NULL;
 
 		g_string_assign(apath, epath->str);
 		g_string_append(apath, "/theme.conf");
@@ -410,13 +453,15 @@ void get_theme_list(GString* pPath, GList** ppThemes)
 //				DEBUGLOGS("(3) theme dir has a valid theme.conf - processing it");
 
 				const char* str;
-				const char* group  =   "Theme";
-				const char* keys[] = { "name",         "author",         "version",         "info" };
-				GString**   vals[] = { &pEntry->pName, &pEntry->pAuthor, &pEntry->pVersion, &pEntry->pInfo };
+				const char* group1 =   "Theme";
+				const char* group2 =   "jabs-clock";
+				const char* grps[] = {  group1,         group1,           group1,            group1,         group2,          group2,              group2,              group2 };
+				const char* keys[] = { "name",         "author",         "version",         "info",         "modes",         "text-color",        "shadow-color",      "fill-color" };
+				GString**   vals[] = { &pEntry->pName, &pEntry->pAuthor, &pEntry->pVersion, &pEntry->pInfo, &pEntry->pModes, &pEntry->pTextColor, &pEntry->pShdoColor, &pEntry->pFillColor };
 
 				for( size_t k = 0; k < vectsz(keys); k++ )
 				{
-					if( (str = g_key_file_get_string(pKF, group, keys[k], NULL)) )
+					if( (str = g_key_file_get_string(pKF, grps[k], keys[k], NULL)) )
 					{
 //						DEBUGLOGP("(3) key of %s has val of %s\n", keys[k], str);
 						*(vals[k]) = g_string_new(str);
@@ -453,19 +498,27 @@ int get_theme_list_sort(gconstpointer themeEntry1, gconstpointer themeEntry2)
 {
 	// TODO: make this more robust by using theme entry file & path strings as well
 
-	const GString* e1  = ((const ThemeEntry*)themeEntry1)->pName;
-	const GString* e2  = ((const ThemeEntry*)themeEntry2)->pName;
-	const bool     ok  =   e1 && e2 && e1->str && e2->str;
-/*	const int      l1  =   ok ?  e1->len  : 0;
-	const int      l2  =   ok ?  e2->len  : 0;
-	const int      lm  =   l1 <  l2 ? l1  : l2;
-	const int      r1  =   ok ?  strnicmp(e1->str, e2->str, lm) : 0;
-//	const int      rs  =   r1 != 0  ?  r1 : l1 < l2 ? -1 : (l1 > l2 ? +1 : 0);
-	const int      rs  =   r1 != 0  ?  r1 : l1 - l2;
-	printf("%s: e1=%s, e2=%s, l1=%d, l2=%d, lm=%d, r1=%d, rs=%d\n",
-		   __func__, e1->str, e2->str, l1, l2, lm, r1, rs);
-	return rs;
-*/
-	return ok ? strnatcasecmp(e1->str, e2->str) : 0;
+	const GString* n1  = ((const ThemeEntry*)themeEntry1)->pName;
+	const GString* n2  = ((const ThemeEntry*)themeEntry2)->pName;
+	const GString* p1  = ((const ThemeEntry*)themeEntry1)->pPath;
+	const GString* p2  = ((const ThemeEntry*)themeEntry2)->pPath;
+	const GString* f1  = ((const ThemeEntry*)themeEntry1)->pFile;
+	const GString* f2  = ((const ThemeEntry*)themeEntry2)->pFile;
+	const bool     ok1 =   n1 && n2 && n1->str && n2->str;
+	const bool     ok2 =   p1 && p2 && p1->str && p2->str;
+	const bool     ok3 =   f1 && f2 && f1->str && f2->str;
+
+	int ret = 0; // default to same if
+
+	if( ok1 && (ret = strnatcasecmp(n1->str, n2->str)) == 0 )
+	{
+		if( ok2 && (ret = strnatcasecmp(p1->str, p2->str)) == 0 )
+		{
+			if( ok3 )
+				ret = strnatcasecmp(f1->str, f2->str);
+		}
+	}
+
+	return ret;
 }
 

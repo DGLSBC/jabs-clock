@@ -1,0 +1,1110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glade-interface>
+  <!-- interface-requires gtk+ 2.24 -->
+  <!-- interface-naming-policy project-wide -->
+  <widget class="GtkDialog" id="helpDialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="title" translatable="yes">Help  for jabs-clock</property>
+    <property name="window_position">center</property>
+    <property name="default_width">480</property>
+    <property name="default_height">360</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="has_separator">True</property>
+    <child internal-child="vbox">
+      <widget class="GtkVBox" id="dialog-vbox1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child internal-child="action_area">
+          <widget class="GtkHButtonBox" id="dialog-action_area1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <widget class="GtkButton" id="buttonClose">
+                <property name="label">gtk-close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <property name="use_stock">True</property>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkHBox" id="hbox1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="spacing">6</property>
+            <child>
+              <widget class="GtkFrame" id="frameTopic">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label_xalign">0</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <widget class="GtkAlignment" id="alignmentTopic">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="top_padding">6</property>
+                    <property name="left_padding">6</property>
+                    <property name="right_padding">6</property>
+                    <child>
+                      <widget class="GtkVButtonBox" id="vbuttonboxTopic">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="spacing">2</property>
+                        <property name="homogeneous">True</property>
+                        <property name="layout_style">start</property>
+                        <child>
+                          <widget class="GtkButton" id="buttonTopic1">
+                            <property name="label" translatable="yes">General</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkButton" id="buttonTopic2">
+                            <property name="label" translatable="yes">Mousing</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkButton" id="buttonTopic3">
+                            <property name="label" translatable="yes">Keying</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkButton" id="buttonTopic4">
+                            <property name="label" translatable="yes">CLI Usage</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                          </widget>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                  </widget>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="labelTopic">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">&lt;b&gt;Topics&lt;/b&gt;</property>
+                    <property name="use_markup">True</property>
+                  </widget>
+                  <packing>
+                    <property name="type">label_item</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkFrame" id="frameHelp">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_focus">True</property>
+                <property name="is_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
+                <property name="receives_default">True</property>
+                <property name="label_xalign">0</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <widget class="GtkAlignment" id="alignmentHelp">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="has_focus">True</property>
+                    <property name="is_focus">True</property>
+                    <property name="can_default">True</property>
+                    <property name="has_default">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="border_width">6</property>
+                    <property name="left_padding">6</property>
+                    <property name="right_padding">6</property>
+                    <child>
+                      <widget class="GtkVBox" id="vboxHelp">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="has_focus">True</property>
+                        <property name="is_focus">True</property>
+                        <property name="can_default">True</property>
+                        <property name="has_default">True</property>
+                        <property name="receives_default">True</property>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindowHelp1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <widget class="GtkViewport" id="viewportHelp1">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <child>
+                                  <widget class="GtkVBox" id="vboxHelp1">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp1.0">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp1.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp1.0">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">jabs-clock, which is short for Just A Basic SVG Clock, is a fork and much enhanced replacement for cairo-clock, an analog desktop clock drawn with SVG and cairo and gtk 2.0.
+
+The app was initially forked from the Launchpad cairo-clock code found at https://launchpad.net/ubuntu/+source/cairo-clock.
+
+I *think* all of the non-install related bugs listed there have been squashed, but there's still lots of testing to be done.
+
+This is my first GNU/Linux project so I'd like to publicly thank Mirco (aka MacSlow) for making cairo-clock and for making it open source. It's been fun learning gdk/gtk, cairo, svg, etc., by using his code as a starting point.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp1.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Introduction&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp1.1">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp1.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp1.1">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Since the project is still under heavy development, there are no distribution or build niceties added yet.  Just an 'install' script to pull down the needed shared libraries (very minimal: apt-get use only) and a make file for creating the executable.
+
+There are 32 bit x86 targeted executables in the home/.jabs-clock directory, as well as a starting cfg file, gui cfg files, some sound files, and some new themes I created by combining cairo-clock's 12 and 24 hour themes together.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp1.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Installation&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp1.2">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp1.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp1.2">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">The current feature list beyond that of cairo-clock 0.3.4 includes (but is not limited to):
+
+Drag-n-drop support for simple theme archives.
+
+The clock shouldn't crash for themes that have missing clock element svgs.
+
+The clock shouldn't crash for missing themes and/or glade gui directories or files (a &lt;simple&gt; theme internal to the clock is used when necessary).
+
+The clock has a much reduced cpu usage regardless of theme complexity, clock size, or refresh rate - typically 3 to 5 (or more) times lower cpu percentage used (for a 192x192 Airplane themed clock, 0.? vs 0.2 @ 1 fps, 2 vs 8 @ 16 fps, and 7 vs 36 @ 60 fps, for jabs-clock and cairo-clock respectively, as measured via htop -d 50 (the ? is there since the number was mostly 0 but would occasionally change to 0.2).
+
+If cairo-dock is running, the clock will use dbus to send current time based icon and label display requests at the top of every minute.
+
+When not visible on the current workspace, the clock doesn't re-draw itself (currently not built-in/enabled by default, although the refresh rate is reduced if it's &gt; 2 redraws per second).
+
+The clock creates current theme-based icons for window manager taskbar/pager use.
+
+The printed theme name lists are now sorted, and done so in a 'natural sort' way (case insensitive, theme10 follows theme1, etc.).
+
+Rudimentary checks are made on a theme directories sub-directories contents to try and ensure they contain a valid theme before adding them to the usable themes list.
+
+For those themes containing a mask svg, the mask will be used for shaping the allowable user mousing input and non-composited drawing masks.
+
+For those themes not containing a mask svg, the allowable user mousing input and non-composited shaping masks will be created correctly for concave clock outlines, and almost correctly for convex clock outlines, regardless of the clock's inner translucency/'glassiness' (pixel alpha values &lt; 50%).
+
+For those themes containing both 12 and 24-hour clock-marks svgs, changing the '24-hour display' setting will automatically switch between them without requiring the selection of a different theme.
+
+For those themes containing alarm hand svgs, an alarm hand is drawn at the 'next alarm' time position, if any alarm times are present in the alarms cfg file entry.
+
+For those themes containing a theme.conf file, the displayed name of the theme will be taken from the theme.conf file's [Theme]name line.
+
+The standard themes that had 12 and 24-hour versions (default, gremlin, ipulse, radium, silvia, and simple) have been combined into 'theme-new' versions that all contain both 12 and 24-hour clock-marks svgs.
+
+Mouse wheel support was enhanced to include multiple uses/capabilities.
+
+Mouse middle button resizing was changed to allow resizing based upon the clock quadrant the mouse cursor is within; also, resizing with the shift key down constrains the resizing to a square.
+
+Resizing and theme changing occur via secondary worker threads, so even complicated themes should not halt the clock hand animation while all of the new versions of the required resources are being created (resizing still has some wonkiness to it that needs to be fixed but the end result is correct).
+
+A number of new context menu items were added. Some are not yet coded, and most are not yet complete, but a small popup calendar widget is available, along with the ability to redraw the current hand animation's rotation angle vs time sampling curve, which will eventually be saved off to the cfg file as a 'custom' animation.
+
+The preferences gui was completely reworked and is now much more robust, but is still very much a work-in- progress.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp1.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Features&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                </child>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindowHelp2">
+                            <property name="can_focus">False</property>
+                            <property name="no_show_all">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <widget class="GtkViewport" id="viewportHelp2">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <child>
+                                  <widget class="GtkVBox" id="vboxHelp2">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp2.0">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp2.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp2.0">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">There is mouse wheel support for the following:
+ 
+Rolling the wheel up (away from you) is considered a decreasing request.
+Rolling the wheel down (towards you) is considered an increasing request.
+
+Theme changing when holding down the control key.
+
+Clock size changing when holding down no extra key (+/-1) or when holding down the shift key (+/-10%).
+
+Clock  date text size changing when holding down the alt key.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp2.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Wheel&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp2.1">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp2.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp2.1">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Click and hold down the left button to drag the clock around the screen. Release the button when done with the move.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp2.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Left Button&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp2.2">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp2.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp2.2">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Mouse middle button resizing was changed to allow resizing based upon the clock quadrant or edge the mouse cursor is nearest. Also, resizing with the shift key down constrains the resizing to a square.
+
+Depending upon the direction in which you wish to resize the clock, click and hold down the middle button.
+
+Similar to a standard app window, you have four 'corner's and four 'edge's to choose from.
+
+For now, don't click near the center of the clock.
+
+Once you click, the mouse cursor should change to a resizing arrow indicating the direction in which you should drag the mouse in order to increase the clock size. Dragging the mouse in the opposite direction will decrease the clock size.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp2.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Middle Button&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp2.3">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp2.3">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp2.3">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">False</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Click and hold down the right button to pop up the clock's context menu.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp2.3">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Right Button&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">3</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                </child>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindowHelp3">
+                            <property name="can_focus">False</property>
+                            <property name="no_show_all">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <widget class="GtkViewport" id="viewportHelp3">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <child>
+                                  <widget class="GtkVBox" id="vboxHelp3">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp3.0">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignment3.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp3">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Key support for the following:
+
+• ESC to stop the clock app
+• context menu to bring up the right-click (context) menu
+• 2 to switch to a 12-hour display
+• 4 to switch to a 24-hour display
+• a to toggle alarm hand display
+• A to toggle above all display
+• b to toggle taskbar display
+• B to toggle below all display
+• c to center the clock on the display
+• d toggle date text display
+• f to change the date text layer
+• F to toggle accepting of the focus
+• H to toggle hands only display
+• i to toggle workspace stickiness
+• k to toggle click-thru ability
+• K to toggle no display display
+• M to toggle maximum size display
+• p to toggle pager display
+• q or Q to stop the clock app
+• r to decrease the animation redraw rate
+• R to increase the animation redraw rate
+• s to toggle second hands display
+• T to toggle text only display
+• v, while holding down the control key, to 'paste' a theme archive file's path for use
+• any of the arrow keys, while holding down the control key, for cycling through the themes
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp3.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Summary&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
+                                  </widget>
+                                </child>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <widget class="GtkScrolledWindow" id="scrolledwindowHelp4">
+                            <property name="can_focus">False</property>
+                            <property name="no_show_all">True</property>
+                            <property name="hscrollbar_policy">never</property>
+                            <child>
+                              <widget class="GtkViewport" id="viewportHelp4">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <child>
+                                  <widget class="GtkVBox" id="vboxHelp4">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp4.0">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp4.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp4.0">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Command Line Interface (CLI) usage is contained with a number of optional switches which are as follows:
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp4.0">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Summary&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp4.1">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp4.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp4.1">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">-?, --help
+Show help options.
+
+--help-all
+Show all help options.
+
+--help-gtk
+Show GTK+ Options.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp4.1">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Help Options&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp4.2">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp4.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp4.2">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">-?, --help
+Print a usage description then exit. Defaults to off.
+
+-l, --list
+List the installed and usable themes then exit. Defaults to off.
+
+-v, --version
+Print the app version information then exit. Defaults to off.
+
+-u, --usercfg
+Use the user configuration values (if any) to replace the built-in defaults. Defaults to off.
+
+-a, --anistart
+Animate the starting display of the clock. Defaults to off.
+
+-x, --xposition=X
+Position the clock X pixels horizontally from the CORNER (see below) screen corner. Defaults to 0.
+
+-y, --yposition=Y
+Position the clock Y pixels vertically from the CORNER (see below) screen corner. Defaults to 0.
+
+-w, --width=WIDTH
+Show with a clock width of WIDTH. Defaults to 128.
+
+-h, --height=HEIGHT
+Show with a clock height of HEIGHT. Defaults to 128.
+
+-e, --extents=EXTENT
+Show the clock with both a width and height of EXTENT. Defaults to 0, indicating non-use.
+
+-o, --offsets=OFFSET
+Show the clock with both horizontal and vertical offsets of OFFSET. Defaults to 0, indicating non-use.
+
+-c, --corner=CORNER
+Show the clock at OFFSET/X/Y (see above) from the CORNER screen corner. Valid values are  0, 1, 2, or 3 for the top-left, top-right, bottom-right, and bottom-left corners respectively. Defaults to 0.
+
+A value of 4 may also be used for a screen center 'corner'.
+
+-t, --theme=NAME
+Use theme NAME to draw the clock. Defaults to &lt;default&gt;, the internal fallback theme.
+
+Use double quotes if the NAME contains spaces.
+
+NAME may be either the theme directory name or the theme's listed name.
+
+-r, --refresh=RATE
+Redraw (animate) the clock display RATE times per second. Defaults to 16.
+
+-2, --twelve
+Assume the clock face is divided into 12 hours (am/pm mode). Defaults to on.
+
+-4, --twentyfour
+Assume the clock face is divided into 24 hours. Defaults to off.
+
+-s, --seconds
+Draw the seconds hand [off]
+
+-d, --date
+Draw the date (and other associated) text [off]
+
+-f, --facedate
+Date text drawn below the hands [off]
+
+-A, --aboveall
+Position above all other windows [off]
+
+-B, --belowall
+Position below all other windows [off]
+
+-b, --taskbar
+Request to show in the taskbar [off]
+
+-p, --pager
+Request to show in the workspace pager [off]
+
+-i, --sticky
+Request to show on all workspaces [off]
+
+-#, --workspace=MASK
+Show only on the MASK'd workspaces (0 for all) [0] (1=space 1, 2=space 2, 3=1 &amp; 2, 4=3, 5=1 &amp; 3, ...)
+
+-M, --maximize
+Show with a WIDTH/HEIGHT of the screen [off]
+
+-F, --fullscreen
+'fake' fullscreen/screensaver mode [off]
+
+-k, --clickthru
+Ignore mouse clicks (treat as glass) [off] (requires showing in the taskbar as well (-b))
+
+-K, --nodisplay
+Same as -k only no clock is shown [off]
+
+-H, --handsonly
+Only the clock face hands are shown [off]
+
+-O, --opacity=OPACITY
+Set the clock's OPACITY (0.0 to 1.0) [1.0]
+
+-T, --textonly
+Show just the clock face text [off]
+
+-D, --debugspew
+Output built-in debug print spew [off]
+
+-E, --evaldraws
+Evaluate (visualize drawing techniques) [off]
+
+-P, --portable
+Settings are assumed 'next to' the app [off]
+
+-z, --wait1=SECONDS
+Wait SECONDS for the compositor to start [0]
+
+-Z, --wait2=SECONDS
+Resend dock info after SECONDS at startup [0]
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp4.2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Application Options&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">2</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkFrame" id="frameHelp4.3">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label_xalign">0</property>
+                                        <property name="shadow_type">none</property>
+                                        <child>
+                                          <widget class="GtkAlignment" id="alignmentHelp4.3">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="top_padding">2</property>
+                                            <property name="bottom_padding">2</property>
+                                            <property name="left_padding">2</property>
+                                            <property name="right_padding">2</property>
+                                            <child>
+                                              <widget class="GtkTextView" id="textviewHelp4.3">
+                                                <property name="visible">True</property>
+                                                <property name="sensitive">False</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="events">GDK_STRUCTURE_MASK | GDK_SCROLL_MASK</property>
+                                                <property name="editable">False</property>
+                                                <property name="wrap_mode">word</property>
+                                                <property name="cursor_visible">False</property>
+                                                <property name="accepts_tab">False</property>
+                                                <property name="text" translatable="yes">Running the app without any switches will have the app use the current user's configuration settings. Otherwise, no configuration settings are used unless the -u switch is used to have the app use them to replace the normal defaults.
+
+Where it makes sense, on/off switches also have a no- variation, normally used to override any undesired user configuration settings (-u), e.g., no-seconds.
+
+See the man page (or get gui Help via the context menu) for a more complete explanation on usage.
+</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="labelHelp4.3">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">&lt;b&gt;Wrap-up&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="type">label_item</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">3</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                </child>
+                              </widget>
+                            </child>
+                          </widget>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                      </widget>
+                    </child>
+                  </widget>
+                </child>
+                <child>
+                  <widget class="GtkLabel" id="labelHelp">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">&lt;b&gt;General&lt;/b&gt;</property>
+                    <property name="use_markup">True</property>
+                  </widget>
+                  <packing>
+                    <property name="type">label_item</property>
+                  </packing>
+                </child>
+              </widget>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="padding">6</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </widget>
+    </child>
+  </widget>
+</glade-interface>

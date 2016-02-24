@@ -10,45 +10,87 @@
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-#include <gtk/gtk.h> // platform specific
-#include "config.h"  // for Settings struct
-#include "basecpp.h" // some useful macros and functions
-#include "themes.h"  // for ThemeList, ThemeEntry definitions
+#include "platform.h" // platform specific
+#include <limits.h>   // for PATH_MAX
+#include "basecpp.h"  // some useful macros and functions
+#include "themes.h"   // for ThemeList, ThemeEntry definitions
 
 // -----------------------------------------------------------------------------
 #define  _USEMTHREADS // working for the most part but not quite perfect yet
-#undef   _USEWKSPACE  // working? appears to cause system hangs, so, no
 
-#define   MIN_CWIDTH        32
-#define   MIN_CHEIGHT       32
-#define   MIN_REFRESH_RATE   1
-#define   MAX_REFRESH_RATE  60
+#define   MIN_CLOCKW         16
+#define   MIN_CLOCKH          MIN_CLOCKW
+#define   MIN_REFRESH_RATE    1
+#define   MAX_REFRESH_RATE   60
+#define   MAX_REFRESH_RATE2 300
 #define   INTERNAL_THEME   "<simple>" // TODO: should be <default> instead?
 
 // TODO:  move main funcs that use these to global?
-#define   drawPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH)/2
-#define   infoPrio (G_PRIORITY_DEFAULT+G_PRIORITY_HIGH_IDLE)/2
+
+#define   drawPrio (G_PRIORITY_HIGH)
 #define   waitPrio (G_PRIORITY_HIGH_IDLE)
+#define   infoPrio (G_PRIORITY_DEFAULT)
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-enum ClockElement
+enum ClockHotKey
 {
-	CLOCK_DROP_SHADOW = 0,
-	CLOCK_FACE,
-	CLOCK_MARKS,
-	CLOCK_MARKS_24H,
-	CLOCK_HOUR_HAND_SHADOW,
-	CLOCK_MINUTE_HAND_SHADOW,
-	CLOCK_SECOND_HAND_SHADOW,
-	CLOCK_HOUR_HAND,
-	CLOCK_MINUTE_HAND,
-	CLOCK_SECOND_HAND,
-	CLOCK_FACE_SHADOW,
-	CLOCK_GLASS,
-	CLOCK_FRAME,
-	CLOCK_MASK,
-	CLOCK_ELEMENTS
+	HOTKEY_HELP       = '?',
+	HOTKEY_TWELVE     = '2',
+	HOTKEY_TWENTYFOUR = '4',
+	HOTKEY_ALARMS     = 'a',
+	HOTKEY_ABOVEALL   = 'A',
+	HOTKEY_TASKBAR    = 'b',
+	HOTKEY_BELOWALL   = 'B',
+	HOTKEY_CENTER     = 'c',
+	// C
+	HOTKEY_DATE       = 'd',
+	// D
+	// e
+	HOTKEY_EVALDRAWS  = 'E',
+	HOTKEY_FACEDATE   = 'f',
+	HOTKEY_FOCUS      = 'F',
+	HOTKEY_SCRNGRAB1  = 'g', // app-generated
+	HOTKEY_SCRNGRAB2  = 'G', // system-generated
+	// h
+	HOTKEY_HANDSONLY  = 'H',
+	HOTKEY_STICKY     = 'i',
+	// I
+	// j
+	// J
+	HOTKEY_CLICKTHRU  = 'k',
+	HOTKEY_NODISPLAY  = 'K',
+	// l
+	// L
+	HOTKEY_MINIMIZE   = 'm',
+	HOTKEY_MAXIMIZE   = 'M',
+	// n
+	// N
+	HOTKEY_OPACITYDN  = 'o',
+	HOTKEY_OPACITYUP  = 'O',
+	HOTKEY_PAGER      = 'p',
+	// P
+	HOTKEY_QUIT1      = 'q',
+//	HOTKEY_QUIT2      = 'Q',
+	HOTKEY_DRAWQUEUED = 'Q',
+	HOTKEY_REFRESHDN  = 'r',
+	HOTKEY_REFRESHUP  = 'R',
+	HOTKEY_SECONDS    = 's',
+	HOTKEY_SQUAREUP   = 'S',
+	// t
+	HOTKEY_TEXTONLY   = 'T',
+	// u
+	// U
+	HOTKEY_PASTE      = 'v'  // lowercase since only used with ctrl w/o shift
+	// V
+	// w
+	// W
+	// x
+	// X
+	// y
+	// Y
+	// z
+	// Z
 };
 
 // -----------------------------------------------------------------------------
@@ -64,88 +106,126 @@ enum ClockSizeType
 // -----------------------------------------------------------------------------
 struct Runtime
 {
-	const  gchar* appName;
-	const  gchar* appVersion;
-	GtkWidget*    pMainWindow;
-	guint         drawTimerId;
-	guint         infoTimerId;
+	const   char* appName;
+	const   char* appVersion;
+	PWidget*      pMainWindow;
+	unsigned int  drawTimerId;
+	unsigned int  infoTimerId;
+	char          appHome[PATH_MAX];
 
 	bool   appStart;
 	bool   appStop;
 	bool   appDebug;
+	bool   cfgSaves;
+	bool   composed;
 	bool   hasParms;
-	bool   renderUp;
-	bool   renderIt;
+//	bool   marcoCity;      // TODO: no longer needed?
+	bool   isMousing;      // set true on clock window's enter-notify, falsse on leave-notify
+
+	bool   evalDraws;
+	bool   maximize;
+	bool   minimize;
 	bool   portably;
 	bool   scrsaver;
-	bool   maximize;
-	bool   clickthru;
-	bool   nodisplay;
-	bool   textonly;
-	bool   evalDraws;
-	bool   optHorHand;
-	bool   optMinHand;
-	bool   optSecHand;
-	bool   useHorSurf;
-	bool   useMinSurf;
-	bool   useSecSurf;
+	bool   squareUp;
+
+	int    lockDims;
+	int    lockOffs;
+
+	bool   renderUp;
+	bool   renderIt;
+	bool   updating;
 	bool   updateSurfs;
-	gint   lockDims;
-	gint   waitSecs1;
-	gint   waitSecs2;
-	gint   refreshFrame;
+	int    renderFrame;
+	int    animWindW;
+	int    animWindH;
+	double animScale;
 	double drawScaleX;
 	double drawScaleY;
+	int    waitSecs1;
+	int    waitSecs2;
 
-	gchar  acDate[64];
-	gchar  acTime[64];
-	gchar  acTxt1[64]; // 1st line of clock text (offset up from 2nd line and defaults to nothing)
-	gchar  acTxt2[64]; // 2nd line of clock text (offset just above center and defaults to nothing)
-	gchar  acTxt3[64]; // 3rd line of clock text (offset just below center and defaults to dow, mon, & dom)
-	gchar  acTxt4[64]; // 4th line of clock text (offset down from 3rd line and defaults to year)
+	char   ttlDateTxt[64]; // title date
+	char   ttlTimeTxt[64]; // title time
+	char   riseSetTxt[64]; // sunrise/sunset
 
-	gint   hours;
-	gint   minutes;
-	gint   seconds;
-	double angleHour;
-	double angleMinute;
-	double angleSecond;
+	char   cfaceTxta3[64]; // 1st line of clock face text (3rd above center - defaults to nothing)
+	char   cfaceTxta2[64]; // 2nd line of clock face text (2nd above center - defaults to nothing)
+	char   cfaceTxta1[64]; // 3nd line of clock face text (1st above center - defaults to nothing)
+	char   cfaceTxtb1[64]; // 4th line of clock face text (1st below center - defaults to dow, mon, & dom (12/24 locale aware))
+	char   cfaceTxtb2[64]; // 5th line of clock face text (2nd below center - defaults to year)
+	char   cfaceTxtb3[64]; // 6th line of clock face text (3rd below center - defaults to timezone)
 
-	gint   prevWinX;
-	gint   prevWinY;
-	gint   prevWinW;
-	gint   prevWinH;
+	int    alhors;         // next (currently timed) alarm event's clock hour
+	int    almins;         // ditto but for the minute
+	char   almsg[256];     // the notification message to send
+	char   allen[4];       // the display time of the message in seconds
 
+	int    hours;          // current time's hour, minutes past the hour, and seconds past the minute
+	int    minutes;        //
+	int    seconds;        //
+
+	double angleAlm;
+	double angleHor;
+	double angleMin;
+	double angleSec;
+	double secDrift;
+
+	int    prevWinX;
+	int    prevWinY;
+	int    prevWinW;
+	int    prevWinH;
+
+	double bboxAlmHand[4];
 	double bboxHorHand[4];
 	double bboxMinHand[4];
 	double bboxSecHand[4];
 
-	tm     timeCtm; // current time as retrieved by the 1/2 sec 'tooltip' timer
+	tm     timeCtm;        // current time as retrieved by the 1/2 sec 'tooltip' timer
+	tm     timeBtm;        // previous current timeCtm
 };
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void change_ani_rate(GtkWidget* pWindow, int refreshRate, bool force, bool setgui);
+void alarm_set(bool force=false, bool update=false);
 
-void change_theme(ThemeEntry* pEntry, GtkWidget* pWindow);
+void change_ani_rate(PWidget* pWindow, int renderRate, bool force, bool setgui);
 
-const gchar* get_theme_icon_filename(bool check=true, bool update=false);
-void         set_window_icon(GtkWidget* pWindow);
+#if _USEGTK
+void change_cursor  (PWidget* pWindow, GdkCursorType type);
+#endif
 
-void make_theme_icon(GtkWidget* pWindow);
+void change_theme   (PWidget* pWindow, const ThemeEntry& te, bool doSurfs);
 
-void update_colormap(GtkWidget* pWidget);
-void update_input_shape(GtkWidget* pWindow, int width, int height, bool dosurfs, bool domask, bool lock);
-void update_ts_info(bool forceTTip=false, bool forceDate=false, bool forceTime=false);
-void update_wnd_dim(GtkWidget* pWindow, int width, int height, bool async);
-void update_wnd_pos(GtkWidget* pWindow, int x, int y);
+void docks_send_update();
 
-gboolean draw_time_handler(GtkWidget* pWidget);
-gboolean info_time_handler(GtkWidget* pWidget);
+#if _USEGTK
+void get_cursor_pos (PWidget* pWidget, int& x, int& y, GdkModifierType& m);
+#endif
+
+const char* get_theme_icon_filename(bool check=true, bool update=false);
+
+void        make_theme_icon(PWidget* pWindow);
+void        set_window_icon(PWidget* pWindow);
+
+gboolean draw_anim_timer(PWidget* pWindow);
+gboolean info_time_timer(PWidget* pWindow);
+
+void update_colormap(PWidget* pWindow);
+void update_shapes  (PWidget* pWindow, int width, int height, bool dosurfs, bool domask, bool lock);
+
+bool update_ts(bool force, bool* newHour=NULL, bool* newMin=NULL);
+
+void update_ts_info(PWidget* pWindow, bool forceTTip=false, bool forceDate=false, bool forceTime=false);
+
+bool update_ts_text(bool newHour);
+
+void update_wnd_dim(PWidget* pWindow, int width, int height, int clockW, int clockH, bool async, bool updgui=true);
+void update_wnd_pos(PWidget* pWindow, int x, int y);
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-extern Runtime  gRun;
+extern Runtime gRun;
 
 #endif // __global_h__
 

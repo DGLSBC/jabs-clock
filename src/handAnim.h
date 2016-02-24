@@ -19,7 +19,9 @@ int    hand_anim_get(double*        xs, double*        ys);
 
 double hand_anim_get(double x); // returns y for given x
 
+void   hand_anim_add       (double x, double y);
 void   hand_anim_chg(int p, double x, double y);
+void   hand_anim_del(int p);
 
 #endif // __handAnim_h__
 

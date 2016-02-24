@@ -5,8 +5,9 @@
 **
 *******************************************************************************/
 
-#include "global.h"
-#include "svgData.h"
+#include "svgData.h" //
+#include "global.h"  // for ?
+#include "draw.h"    // for ?
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -215,36 +216,36 @@ static int   g_svgDefMaskLen   = vectsz(g_svgDefMask)         - 1;
 const  char* g_svgDefData[] =
 {
 	g_svgDefFace,
-	g_svgDefMarks,          g_svgDefMarks24,
-	g_svgDefHour,           g_svgDefMinute,           g_svgDefSecond,
-	g_svgDefHourShadow,     g_svgDefMinuteShadow,     g_svgDefSecondShadow,
+	g_svgDefMarks,      g_svgDefMarks24,
+	g_svgDefHour,       g_svgDefMinute,       g_svgDefSecond,
+	g_svgDefHourShadow, g_svgDefMinuteShadow, g_svgDefSecondShadow,
 	g_svgDefGlass,
 	g_svgDefFrame,
-	g_svgDefMask,
+//	g_svgDefMask,
 	NULL
 };
 
 const  int   g_svgDefDLen[] =
 {
 	g_svgDefFaceLen,
-	g_svgDef12MrksLen,      g_svgDef24MrksLen,
-	g_svgDefHorHndLen,      g_svgDefMinHndLen,        g_svgDefSecHndLen,
-	g_svgDefHorShdLen,      g_svgDefMinShdLen,        g_svgDefSecShdLen,
+	g_svgDef12MrksLen,  g_svgDef24MrksLen,
+	g_svgDefHorHndLen,  g_svgDefMinHndLen,    g_svgDefSecHndLen,
+	g_svgDefHorShdLen,  g_svgDefMinShdLen,    g_svgDefSecShdLen,
 	g_svgDefGlassLen,
 	g_svgDefFrameLen,
-	g_svgDefMaskLen,
+//	g_svgDefMaskLen,
 	0
 };
 
 const  int   g_svgDefDTyp[] =
 {
-	CLOCK_FACE,
-	CLOCK_MARKS,            CLOCK_MARKS_24H,
-	CLOCK_HOUR_HAND,        CLOCK_MINUTE_HAND,        CLOCK_SECOND_HAND,
-	CLOCK_HOUR_HAND_SHADOW, CLOCK_MINUTE_HAND_SHADOW, CLOCK_SECOND_HAND_SHADOW,
-	CLOCK_GLASS,
-	CLOCK_FRAME,
-	CLOCK_MASK,
+	draw::CLOCK_FACE,
+	draw::CLOCK_MARKS,            draw::CLOCK_MARKS_24H,
+	draw::CLOCK_HOUR_HAND,        draw::CLOCK_MINUTE_HAND,        draw::CLOCK_SECOND_HAND,
+	draw::CLOCK_HOUR_HAND_SHADOW, draw::CLOCK_MINUTE_HAND_SHADOW, draw::CLOCK_SECOND_HAND_SHADOW,
+	draw::CLOCK_GLASS,
+	draw::CLOCK_FRAME,
+//	draw::CLOCK_MASK,
 	-1
 };
 

@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<interface>
+  <object class="GtkUIManager" id="uimanager1">
+    <child>
+      <object class="GtkActionGroup" id="actiongroup1">
+        <child>
+          <object class="GtkAction" id="prefsMenuItem">
+            <property name="stock_id">gtk-preferences</property>
+            <property name="name">prefsMenuItem</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="chartMenuItem">
+            <property name="name">chartMenuItem</property>
+            <property name="label" translatable="yes">Hand Animation</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="alarmMenuItem">
+            <property name="name">alarmMenuItem</property>
+            <property name="label" translatable="yes">Alarms</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="chimeMenuItem">
+            <property name="name">chimeMenuItem</property>
+            <property name="label" translatable="yes">Chimes</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="tzoneMenuItem">
+            <property name="name">tzoneMenuItem</property>
+            <property name="label" translatable="yes">Time Zone</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="dateMenuItem">
+            <property name="name">dateMenuItem</property>
+            <property name="label" translatable="yes">Calendar</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="infoMenuItem">
+            <property name="stock_id">gtk-about</property>
+            <property name="name">infoMenuItem</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="helpMenuItem">
+            <property name="stock_id">gtk-help</property>
+            <property name="name">helpMenuItem</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="quitMenuItem">
+            <property name="stock_id">gtk-quit</property>
+            <property name="name">quitMenuItem</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <ui>
+      <popup name="popUpMenu">
+        <menuitem action="prefsMenuItem"/>
+        <menuitem action="chartMenuItem"/>
+        <menuitem action="alarmMenuItem"/>
+        <menuitem action="chimeMenuItem"/>
+        <separator/>
+        <menuitem action="tzoneMenuItem"/>
+        <menuitem action="dateMenuItem"/>
+        <separator/>
+        <menuitem action="infoMenuItem"/>
+        <menuitem action="helpMenuItem"/>
+        <separator/>
+        <menuitem action="quitMenuItem"/>
+      </popup>
+    </ui>
+  </object>
+  <!-- interface-requires gtk+ 2.24 -->
+  <!-- interface-naming-policy toplevel-contextual -->
+  <object class="GtkMenu" constructor="uimanager1" id="popUpMenu">
+    <property name="can_focus">False</property>
+  </object>
+</interface>

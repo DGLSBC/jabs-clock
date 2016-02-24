@@ -185,7 +185,7 @@
          inkscape:r_cx="true"
          id="path5247"
          d="M -6.024143,-0.19685714 L -6.024143,0.33314286 L 22.318504,0.19685715 L 22.383734,0.19685715 L 25.743105,0.18171429 L 25.808335,0.18171429 L 34.092608,0.15142858 L 34.092608,-5.426215e-15 L 25.873566,-0.045428572 L 25.743105,-0.045428572 L 22.383734,-0.060571432 L 22.253273,-0.060571432 L -6.024143,-0.19685714 z "
-         style="fill:#dfdfdf;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         style="fill:#000000;fill-opacity:0.1254902;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
       <path
          transform="scale(1.788284,1.788284)"
          sodipodi:open="true"
@@ -199,7 +199,7 @@
          sodipodi:cy="0"
          sodipodi:cx="0"
          id="path3101"
-         style="fill:#dfdfdf;fill-opacity:1;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         style="fill:#000000;fill-opacity:0.1254902;fill-rule:nonzero;stroke:#dfdfdf;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:type="arc" />
     </g>
   </g>

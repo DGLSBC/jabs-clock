@@ -8,8 +8,9 @@
 #ifndef __themes_h__
 #define __themes_h__
 
-#include <gtk/gtk.h>
-#include "basecpp.h" // some useful macros and functions
+#include <glib.h>     // for GString
+#include "platform.h" // platform specific
+#include "basecpp.h"  // some useful macros and functions
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -21,6 +22,10 @@ struct ThemeEntry
 	GString* pAuthor;
 	GString* pVersion;
 	GString* pInfo;
+	GString* pModes;
+	GString* pTextColor;
+	GString* pShdoColor;
+	GString* pFillColor;
 };
 
 // -----------------------------------------------------------------------------
@@ -34,6 +39,9 @@ bool        theme_list_end(ThemeList*& tl);
 ThemeEntry& theme_list_fnd(ThemeList*& tl, const char* path, const char* file, const char* name, int* index=NULL);
 ThemeEntry& theme_list_nth(ThemeList*& tl, int nth);
 ThemeEntry& theme_list_nxt(ThemeList*& tl);
+
+void        theme_ntry_cpy(ThemeEntry& td, const ThemeEntry& ts);
+void        theme_ntry_del(ThemeEntry& te);
 
 #endif // __themes_h__
 

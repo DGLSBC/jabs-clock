@@ -1,5 +1,5 @@
 # jabs-clock
-Just A Basic SVG Clock
+Just A Basic SVG Clock - readme
 
 A fork and much enhanced replacement for cairo-clock, an analog desktop clock
   drawn with SVG and cairo and gtk 2.0
@@ -7,10 +7,16 @@ A fork and much enhanced replacement for cairo-clock, an analog desktop clock
 ----
 This is my first GNU/Linux project. I've been messing with it since May 2015.
 It seems to run fine on the distros I've tested it on, which are several of the
-newer ones. It runs best on Mint/XFCE, as no startup wait time is required to
-get it to display a properly scaled clock.
+popular newer ones. It's been tested most on Linux Mint/XFCE Rebecca.
 
-Still very much a beta but hopefully it will work for you.
+There's a complete 'starter' app home directory in home/.jabs-clock, including
+pre-built gtk2 and gtk3 executables if you don't feel like building from source.
+
+Please see the readme files in each directory for specifics, including the
+current set of dependencies for running and building from source.
+
+Still very much a beta since I'm the only one who's tested it, but hopefully
+it'll work for you.
 
 --------------------------------------------------------------------------------
 This is a fork of the Launchpad cairo-clock code found at
@@ -27,9 +33,9 @@ There are 32 bit x86 targeted executables in the home/.jabs-clock directory, as
   well as a starting cfg file, gui cfg files, some sound files, and some new
   themes I created by combining cairo-clock's 12 and 24 hour themes together.
 
-This is my first GNU/Linux project so I'd like to publicly thank Mirco for
-  making cairo-clock and for making it open source. It's been fun learning
-  gdk/gtk, cairo, svg, etc., using his code as a starting point.
+This is my first GNU/Linux project so I'd like to publicly thank Mirco (aka
+  MacSlow) for making cairo-clock and for making it open source. It's been fun
+  learning gdk/gtk, cairo, svg, etc., by using his code as a starting point.
 
 --------------------------------------------------------------------------------
 Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
@@ -42,14 +48,19 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
 - shouldn't crash for missing themes and/or glade gui directories or files
   (a <simple> theme internal to the clock is used when necessary)
 
-- much reduced cpu usage regardless of theme complexity or clock size,
-  typically 3 to 5 times less or more
+- much reduced cpu usage regardless of theme complexity, clock size, or
+  refresh rate - typically 3 to 5 (or more) times lower cpu percentage used
+  (for a 192x192 Airplane themed clock, 0.2 vs 0.? @ 1 fps, 2 vs 8 @ 16 fps, and
+   7 vs 36 @ 60 fps, for jabs-clock and cairo-clock respectively, as measured
+   via htop -d 50 (the ? is there since the number was mostly 0 but would
+   occasionally change to 0.2)
 
 - if cairo-dock is running, will use dbus to send current time based icon
   and label display requests every minute
 
 - when not visible on the current workspace, the app doesn't re-draw itself
-  (currently not enabled by default)
+  (currently not built-in/enabled by default, although the refresh rate is
+   reduced if it's > 2 redraws per second)
 
 - creates current theme-based icons for window manager taskbar/pager use
 
@@ -59,9 +70,24 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
 - rudimentary checks are made on a theme directories sub-directories contents
   to try and ensure they contain a valid theme
 
+- for those themes containing a mask svg, the mask will be used for shaping
+  the allowable user mousing input and non-composited drawing masks
+
+- for those themes not containing a mask svg, the allowable user mousing input
+  and non-composited shaping masks will be created correctly for concave clock
+  outlines, and almost correctly for convex clock outlines, regardless of the
+  clock's inner translucency/'glassiness' (pixel alpha values < 50%)
+
 - for those themes containing both 12 and 24-hour clock-marks svgs, changing
   the '24-hour display' setting will automatically switch between them without
   requiring the selection of a different theme
+
+- for those themes containing alarm hand svgs, an alarm hand is drawn at the
+  'next alarm' time position, if any alarm times are present in the alarms
+  cfg file entry
+
+- for those themes containing a theme.conf file, the displayed name of the
+  theme will be taken from the theme.conf file's [Theme]name line
 
 - the standard themes that had 12 and 24-hour versions (default, gremlin,
   ipulse, radium, silvia, and simple) have been combined into 'theme-new'
@@ -82,6 +108,14 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   still has some wonkiness to it that needs to be fixed but the end result is
   correct)
 
+- a number of new context menu items have been added - most are not yet coded,
+  but a small popup calendar widget is available, along with the ability to
+  redraw the current hand animation's rotation angle vs time sampling curve,
+  which will eventually be saved off to the cfg file as a 'custom' animation
+
+- the preferences gui has been completely reworked, still very much a work-in-
+  progress, and much more robust
+
 - key support for the following:
   - ESC or q or Q to stop the clock app
   - context menu to bring up the right-click (context) menu
@@ -90,6 +124,7 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   - c or C to center the clock on the display
   - d or D to toggle date text display
   - f or F to change the date text layer
+  - h or H for a hands only display
   - i or I to toggle workspace stickiness
   - k or K to toggle click-thru ability
   - m or M to toggle maximum size display
@@ -98,6 +133,7 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   - r or R to reduce/increase animation redraw rate
   - s or S to toggle second hands display
   - t or T for a text only display
+  - arrow keys + control key for theme cycling
   - ?
 
 - gui support for the following:
@@ -105,12 +141,14 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   - specifying the layer the date text is shown on
   - starting the clock with an animated 'zooming' effect
   - specifying the screen corner to which the x and y coordinates are relative
+  - specifying the second hand animation method: original, flick, or sweep
+    (each is also customizable, for now, via a secondary gui dialog box)
   - ?
 
 - command line support for the following:
   (run the app with -? to see the complete list)
-  - those given above for gui support
-  - starting the clock at maximum size
+  - some given above for gui support
+  - starting the clock at maximum size (or in a 'fake' fullscreen mode)
   - specifying a startup delay time to ensure the compositor is running
   - specifying the use of the user's configuration settings as a default
   - specifying the workspace the clock is shown on
@@ -119,21 +157,25 @@ Current feature list beyond that of cairo-clock 0.3.4 includes (but is not
   - ?
 
 - config entry support for the following:
-  - those given above for cli support
+  - those given above for gui and cli support
   - displaying (or not) of any of the clock hands
   - specifying the playing of any alarm or quarter-hour chime sounds
-  - specifying the second hand animation method: original, flick, or sweep
   - specifying the date text font face, font size, color, and format
   - specifying the color and outline width of the date text's shadow
   - specifying the 'from center' vertical offset of the date text
   - specifying the tooltip text date and time text 12 hour format
   - specifying the tooltip text date and time text 24 hour format
   - specifying the window title date and time text format
+  - specifying the alarm's positions, in hh:mm semi-colon separated format
+    (hh is in 00-24 hour notation; mm is in 00-59 minute notation; currently
+     only requests that a 30 second generic notification message be displayed )
 
 - rudimentary support, using hardcoded-only test values for the following:
   - paths to the quarter hour chime sound files
   - path to the alarm sound file
   - ?
+
+- a user-friendly 'print themes' list
 
 - ?
 

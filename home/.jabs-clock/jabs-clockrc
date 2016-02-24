@@ -1,78 +1,182 @@
 [General]
-x=8
-y=8
-width=192
-height=192
+x=40
+y=20
+width=256
+height=256
 show-seconds=1
-show-date=0
-theme=Echee2
+show-date=1
+theme=radium-new-no-#s
 keep-on-top=0
-appear-in-pager=1
-appear-in-taskbar=1
-sticky=1
+appear-in-pager=0
+appear-in-taskbar=0
+sticky=0
 twentyfour=0
 refreshrate=16
+#refreshrate=100
 
 # 0.4.0 added
 
-corner=1
+corner=2
+rotation=0
 workspace=0
 face-date=1
 keep-on-bottom=1
-opacity=1
 animate-startup=1
-theme-path=/home/me/.pbug-clock/themes
+#refresh-skip-count=3
+refresh-skip-count=0
+queued-draw=0
+opacity=1
 
+#theme-path=/media/me/Backup/code/jabs-clock/wip/bin/.jabs-clock/themes
+theme-path=
+
+show-alarms=1
 show-hours=1
 show-minutes=1
+show-tooltip=1
 second-hand-type=1
 
-font-size=10
-font-offy=1.25
-font-path=/usr/share/fonts/truetype/dejavu/DejaVuSerifCondensed-Italic.ttf
-font-name=DejaVu Serif Italic Semi-Condensed 10
+font-size=8
+font-offy=1
+#font-path=/usr/share/fonts/truetype/dejavu/DejaVuSerifCondensed.ttf
+#font-name=DejaVu Serif Semi-Condensed 8
+font-name=Michroma Bold Italic 10
+font-path=
 
-font-text-red=0.71918797492980957
-font-text-green=0.82767599821090698
-font-text-blue=0.72062301635742188
-font-text-alpha=0.75
+font-text-red=0.71999999999999997
+font-text-green=0.82999999999999996
+font-text-blue=0.71999999999999997
+font-text-alpha=0.90000000000000002
 
-font-shadow-red=0.10000000149011612
-font-shadow-green=0.10000000149011612
-font-shadow-blue=0.10000000149011612
-font-shadow-width=0.10000000149011612
-font-shadow-alpha=1
+font-shadow-red=0.25
+font-shadow-green=0.25
+font-shadow-blue=0.25
+font-shadow-alpha=0.5
+font-shadow-width=0.10000000000000001
 
-format-date=%a %b %d
-format-time=%I:%M %P
-format-12Hrs=%A%n%B %d %Y%n%I:%M:%S %P
+format-date=%a %d %b
+format-time=%-H:%M
+format-12Hrs=%A%n%B %d %Y%n%-H:%M:%S
 format-24Hrs=%A%n%B %d %Y%n%T
 
+play-alarms=1
+play-chimes=1
 play-sounds=0
-play-chimes=0
-play-alarms=0
 
-[HandAnim0]
-Name=Cairo-Clock
-Count=31
-X=0;0.033333333;0.066666666999999999;0.10000000000000001;0.133333333;0.16666666699999999;0.20000000000000001;0.233333333;0.26666666700000002;0.29999999999999999;0.33333333300000001;0.366666667;0.40000000000000002;0.43333333299999999;0.46666666699999998;0.5;0.53333333299999997;0.56666666700000001;0.59999999999999998;0.63333333300000005;0.66666666699999999;0.69999999999999996;0.73333333300000003;0.76666666699999997;0.80000000000000004;0.83333333300000001;0.86666666699999995;0.90000000000000002;0.93333333299999999;0.96666666700000003;1;
-Y=0;0;0;0;0;0.01;0.01;0.02;0.029999999999999999;0.050000000000000003;0.080000000000000002;0.11;0.14999999999999999;0.20000000000000001;0.26000000000000001;0.32000000000000001;0.40000000000000002;0.47999999999999998;0.56999999999999995;0.66000000000000003;0.76000000000000001;0.84999999999999998;0.93999999999999995;1.02;1.0900000000000001;1.1499999999999999;1.1799999999999999;1.1899999999999999;1.1599999999999999;1.1000000000000001;1;
+#alarms=10:00;11:00;14:00;19:00
+#alarm-dows=.MTWTF.;..T....;.MTWTF.;SMTWTFS
+#alarm-msgs=Time for mom to walk.;Time to take up mom's shower mat.;Time for mom to walk.;Time for mom to take her pills.
+#alarm-msg-timeouts=60;240;60;60
 
-[HandAnim1]
-Name=Flick
+#play-sounds=1
+#alarms=14:53
+#alarm-dows=SMTWTFS
+#alarm-msgs=Test notification.
+#alarm-msg-timeouts=10
+
+use-png-icon=0
+auto-switch24=1
+
+background-red=0.17000000000000001
+background-green=0.34000000000000002
+background-blue=0.68000000000000005
+
+format-date12=%a %b %d
+format-date24=%a %d %b
+format-time12=%-I:%M %P
+format-time24=%-H:%M
+
+# pango markup supported tooltip texts
+# (see /usr/share/kde4/apps/katepart/syntax/pango.xml for a full list)
+# bold:        <b>
+# italics:     <i>
+# small font:  <small>
+# large font:  <big>
+# strikethru:  <s>
+# subscript:   <sub>
+# superscript: <sup>
+# ?:           <tt>
+# underlined:  <u>
+#
+# <span color="?">%s</span>    ?: black,  red,    green, blue, magenta, orange, yellow, white, ...
+# <span size ="?">%s</span>    ?: small,  large,  others?
+# <span style="?">%s</span>    ?: italic, normal, oblique
+
+#format-ttip12=<span font="Michroma Bold Italic 10"><span color="DarkOliveGreen"><big><b>%A</b></big></span>%n%B %d %Y%n%-I:%M:%S %P</span>
+#format-ttip12=<span font="Michroma Bold Italic 10"><span color="DarkOliveGreen"><big><b>%A</b></big></span></span>%n<span font="Michroma 8">%B %d %Y%n%-I:%M:%S %P</span>
+#format-ttip12=<span font="DejaVu Serif Semi-Condensed 10"><span color="DarkOliveGreen"><big><b>%A</b></big></span></span>%n<span font="DejaVu Serif Semi-Condensed 8">%B %d %Y%n%-I:%M:%S %P %Z</span>
+format-ttip12=<span font="DejaVu Serif Semi-Condensed 10"><span color="DarkOliveGreen"><big><b>%A</b></big></span></span>%n<span font="DejaVu Serif Semi-Condensed 8">%B %d %Y%n%-I:%M:%S %P %Z</span>\n( <small><b>@f</b></small> )\n<small>@r</small>
+format-ttip24=%A%n%B %d %Y%n%T
+
+#tz-name=America/Chicago
+#tz-gmt-hour-offset=-6
+#tz-gmt-min-offset=0
+
+tz-show-name=Ft Worth
+#tz-show-hour-offset=0
+#tz-show-min-offset=0
+tz-latitude=32.772345999999999
+tz-longitude=-97.464229000000003
+
+#tz-show-name=GMT
+#tz-show-hour-offset=6
+#tz-show-min-offset=0
+
+#tz-show-name=Test
+#tz-show-hour-offset=-2
+#tz-show-min-offset=-58
+
+opt-hand-alarm=1
+opt-hand-hour=1
+opt-hand-minute=1
+opt-hand-second=1
+
+use-surf-alarm=0
+use-surf-hour=0
+use-surf-minute=1
+use-surf-second=1
+
+#text-above-scale3=0.55
+#text-above-scale2=0.50
+#text-above-scale1=1.00
+
+#text-below-scale1=0.80
+#text-below-scale2=0.50
+#text-below-scale3=0.55
+
+#text-above-htfac3=0.00
+#text-above-htfac2=0.00
+#text-above-htfac1=0.25
+
+#text-below-htfac1=0.25
+#text-below-htfac2=0.00
+#text-below-htfac3=0.00
+
+tz-name=America/Chicago
+tz-gmt-hour-offset=-6
+tz-gmt-min-offset=0
+tz-show-hour-offset=0
+tz-show-min-offset=0
+
+text-above-scale1=1
+text-above-scale2=0.5
+text-above-scale3=0.5
+
+text-below-scale1=1
+text-below-scale2=0.5
+text-below-scale3=0.5
+
+text-above-htfac1=0
+text-above-htfac2=0
+text-above-htfac3=0
+
+text-below-htfac1=0
+text-below-htfac2=0
+text-below-htfac3=0
+
+[HandAnim3]
+Name=Custom
 Count=31
 X=0;0.033333333;0.066666666999999999;0.10000000000000001;0.133333333;0.16666666699999999;0.20000000000000001;0.233333333;0.26666666700000002;0.29999999999999999;0.33333333300000001;0.366666667;0.40000000000000002;0.43333333299999999;0.46666666699999998;0.5;0.53333333299999997;0.56666666700000001;0.59999999999999998;0.63333333300000005;0.66666666699999999;0.69999999999999996;0.73333333300000003;0.76666666699999997;0.80000000000000004;0.83333333300000001;0.86666666699999995;0.90000000000000002;0.93333333299999999;0.96666666700000003;1;
 Y=0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0.0050000000000000001;0.042000000000000003;0.096000000000000002;0.20000000000000001;0.45000000000000001;1;1.2;1.1799999999999999;1.1000000000000001;1;
-
-[HandAnim2]
-Name=Sweep
-Count=31
-X=0;0.033333333;0.066666666999999999;0.10000000000000001;0.133333333;0.16666666699999999;0.20000000000000001;0.233333333;0.26666666700000002;0.29999999999999999;0.33333333300000001;0.366666667;0.40000000000000002;0.43333333299999999;0.46666666699999998;0.5;0.53333333299999997;0.56666666700000001;0.59999999999999998;0.63333333300000005;0.66666666699999999;0.69999999999999996;0.73333333300000003;0.76666666699999997;0.80000000000000004;0.83333333300000001;0.86666666699999995;0.90000000000000002;0.93333333299999999;0.96666666700000003;1;
-Y=0;0.033333333;0.066666666999999999;0.10000000000000001;0.133333333;0.16666666699999999;0.20000000000000001;0.233333333;0.26666666700000002;0.29999999999999999;0.33333333300000001;0.366666667;0.40000000000000002;0.43333333299999999;0.46666666699999998;0.5;0.53333333299999997;0.56666666700000001;0.59999999999999998;0.63333333300000005;0.66666666699999999;0.69999999999999996;0.73333333300000003;0.76666666699999997;0.80000000000000004;0.83333333300000001;0.86666666699999995;0.90000000000000002;0.93333333299999999;0.96666666700000003;1;
-
-[HandAnim3]
-Name=Simple
-Count=3
-X=0;0.5;1;
-Y=0;0.5;1;
 

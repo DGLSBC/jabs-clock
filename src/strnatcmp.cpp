@@ -32,10 +32,11 @@
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 #undef    DEBUGLOG
-#define   DEBUGNSP   "snat"
+#define   DEBUGNSP     "snat"
 
-#include <ctype.h>
-#include "strnatcmp.h"
+#include <ctype.h>     // for ?
+
+#include "strnatcmp.h" //
 #include "debug.h"     // for debugging prints
 
 // -----------------------------------------------------------------------------

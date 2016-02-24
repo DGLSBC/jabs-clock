@@ -6,45 +6,50 @@
 *******************************************************************************/
 
 #undef    DEBUGLOG
-#define   DEBUGNSP   "gui"
+#define   DEBUGNSP     "cgui"
 
-#include <math.h>           // for fabs
-#include "cfgdef.h"
-#include "global.h"         // _USEWKSPACE is in here
-#include <stdlib.h>
-#include <gdk/gdkkeysyms.h> // for GDK_... defines
+#define  _ENABLE_DND   // enable support for drag-n-dropping theme archives onto the clock window
 
-#include "debug.h"          // for debugging prints
+#include <math.h>      // for fabs
+#include <stdlib.h>    // for ?
+#include <limits.h>    // for PATH_MAX
+#include "platform.h"  // for GDK_... key defines
+#include "clockGUI.h"  //
 
-#include "draw.h"
-#include "chart.h"
-#include "clock.h"
-#include "themes.h"
-#include "utility.h"
-#include "clockGUI.h"
-#include "settings.h"
-#include "loadTheme.h"
-#include "x.h"              // g_window_space
+#include "cfgdef.h"    // for ?
+#include "global.h"    // for Runtime struct, MIN_CLOCKW/H, global funcs, ...
+#include "basecpp.h"   // some useful macros and functions
 
-#ifdef   _USEWKSPACE
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-#define   WNCK_I_KNOW_THIS_IS_UNSTABLE
-#include <libwnck/libwnck.h>
-#endif
+#include "chart.h"     // for ?
+#include "copts.h"     // for copts
+#include "config.h"    // for Config struct, CornerType enum, ...
+#include "themes.h"    // for ?
+#include "helpGUI.h"   // for hgui::init
+#include "infoGUI.h"   // for igui::init
+#include "utility.h"   // for g_main_end and g_del_dir
+#include "settings.h"  // for ?
+#include "tzoneGUI.h"  // for ?
+#include "loadTheme.h" // for ?
+#include "loadGUI.h"   // for lgui::okayGUI(), lgui::pWidget, ...
+#include "debug.h"     // for debugging prints
+#include "draw.h"      // for draw::grab, draw::render_set, draw::render, ...
+#include "x.h"         // for workspace related (and _USEWKSPACE is in here)
 
+#if _USEGTK
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 typedef void (*TOGBTNCB)(GtkToggleButton*, gpointer);
 
 // -----------------------------------------------------------------------------
-namespace gui
+namespace cgui
 {
-static bool getGladeXml(const char* name, const char* root=NULL, GCallback callBack=NULL);
 
 static void initToggleBtn(const char* name, const char* event, int value, TOGBTNCB callback);
 
+static void send_client_msg(const char* msg);
 static void stopApp();
+
+static bool theme_import(GtkWidget* pWidget, const char* uri);
 
 static void     wndMoveEnter(GtkWidget* pWidget, GdkEventButton* pButton);
 static void     wndMoveExit (GtkWidget* pWidget);
@@ -55,33 +60,56 @@ static void     wndSizeExit (GtkWidget* pWidget);
 static gboolean wndSizeTime (GtkWidget* pWidget);
 
 // -----------------------------------------------------------------------------
-/*#ifdef _USEWKSPACE
-static void on_active_workspace_changed(WnckScreen* screen, WnckWorkspace* prevSpace, gpointer userData);
-#endif*/
+#if _USEWKSPACE
+#if 0
+static void on_workspace_active_changed(WnckScreen* screen, WnckWorkspace* prevSpace, gpointer userData);
+#endif
+static void on_workspace_bkgrnd_changed(WnckScreen* screen, gpointer userData);
+#endif
 
-// this is currently not an event handler (so not sure why it's called on_...)
-//static void on_alpha_screen_changed(GtkWidget* pWidget, GdkScreen* pOldScreen, GtkWidget* pLabel);
-
+static void     on_activate_focus    (GtkWindow* pWidget, gpointer userData);
 static gboolean on_button_press      (GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdge edge);
+#if !GTK_CHECK_VERSION(3,0,0)
+static gboolean on_client_msg        (GtkWidget* pWidget, GdkEventClient* pEventClient, gpointer userData);
+#endif
 static void     on_composited_changed(GtkWidget* pWidget, gpointer userData);
 static gboolean on_configure         (GtkWidget* pWidget, GdkEventConfigure* pEvent, gpointer userData);
-static gint     on_delete            (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
-static void     on_destroy           (GtkWidget* pWidget, gpointer userData);
+#if 0
+static gboolean on_damage            (GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData);
+#endif
+static gboolean on_delete            (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
+static gboolean on_destroy           (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
 
 #ifdef _ENABLE_DND
 static void     on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gint x, gint y, GtkSelectionData* selData, guint info, guint _time, gpointer userData);
 #define TGT_SEL_STR 0
 #endif
 
-static gboolean on_enter_notify (GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData);
-static gboolean on_expose       (GtkWidget* pWidget, GdkEventExpose* pExpose);
-static gboolean on_focus_in     (GtkWidget* pWidget);
-static gboolean on_key_press    (GtkWidget* pWidget, GdkEventKey* pKey, gpointer userData);
-static gboolean on_leave_notify (GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData);
-static gboolean on_motion_notify(GtkWidget* pWidget, GdkEventMotion* pEvent, gpointer userData);
-static gboolean on_tooltip_show (GtkWidget* pWidget, gint x, gint y, gboolean keyboard_mode, GtkTooltip* pTooltip, gpointer userData);
-static gboolean on_wheel_scroll (GtkWidget* pWidget, GdkEventScroll* pScroll, gpointer userData);
-static gboolean on_window_state (GtkWidget* pWidget, GdkEventWindowState* pState, gpointer userData);
+static gboolean on_enter_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData);
+
+#if 0
+static gboolean on_event(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
+#endif
+
+#if GTK_CHECK_VERSION(3,0,0)
+static gboolean on_damage       (GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData);
+static gboolean on_draw         (GtkWidget* pWidget, cairo_t* cr, gpointer userData);
+#else
+static gboolean on_expose       (GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData);
+#endif
+
+#if 0
+static gboolean on_focus_in      (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
+#endif
+static gboolean on_key_press     (GtkWidget* pWidget, GdkEventKey* pKey, gpointer userData);
+static gboolean on_leave_notify  (GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData);
+static gboolean on_map           (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
+static gboolean on_motion_notify (GtkWidget* pWidget, GdkEventMotion* pEvent, gpointer userData);
+static gboolean on_query_tooltip (GtkWidget* pWidget, gint x, gint y, gboolean keyboard_mode, GtkTooltip* pTooltip, gpointer userData);
+static void     on_screen_changed(GtkWidget* pWidget, GdkScreen* pPrevScreen, gpointer userData);
+static gboolean on_unmap         (GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
+static gboolean on_wheel_scroll  (GtkWidget* pWidget, GdkEventScroll* pScroll, gpointer userData);
+static gboolean on_window_state  (GtkWidget* pWidget, GdkEventWindowState* pState, gpointer userData);
 
 static void on_popupmenu_done(GtkMenuShell* pMenuShell, gpointer userData);
 
@@ -93,131 +121,310 @@ static void on_help_activate (GtkMenuItem* pMenuItem, gpointer userData);
 static void on_info_activate (GtkMenuItem* pMenuItem, gpointer userData);
 static void on_prefs_activate(GtkMenuItem* pMenuItem, gpointer userData);
 static void on_quit_activate (GtkMenuItem* pMenuItem, gpointer userData);
+static void on_tzone_activate(GtkMenuItem* pMenuItem, gpointer userData);
 
+static gboolean on_popup_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
 static gboolean on_prefs_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData);
-static void     on_popup_close(GtkDialog* pDialog, gpointer  userData);
 
 static GtkWidget* popup_activate(char type, const char* name, const char* widget);
 
-static void loadMenuPopup();
-
-/*#ifdef _ENABLE_DND
-// target side drag signals
-void     (*drag_leave)        (GtkWidget* widget, GdkDragContext* context, guint time_);
-gboolean (*drag_motion)       (GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time_);
-gboolean (*drag_drop)         (GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time_);
-void     (*drag_data_received)(GtkWidget* widget, GdkDragContext* context, gint x, gint y, GtkSelectionData* selection_data, guint info, guint time_);
-gboolean (*drag_failed)       (GtkWidget* widget, GdkDragContext* context, GtkDragResult result);
-#endif*/
+static void loadMenuPopupFunc();
+static bool loadMenuPopup();
 
 // -----------------------------------------------------------------------------
-static const gchar* get_logo_filename()
-{
-	return PKGDATA_DIR "/pixmaps/cairo-clock-logo.png";
-}
+static GtkWindow*  g_pPopupDlg = NULL;
+static bool        g_inPopup   = false;
+static char        g_nmPopup   = ' ';
 
-// -----------------------------------------------------------------------------
-static GladeXML*      g_pGladeXml = NULL;
-GladeXML*               pGladeXml = NULL;
+static bool        g_wndMovein = false;
+static guint       g_wndMoveT  = 0; // timer id
 
-static GtkWindow*     g_pPopupDlg = NULL;
-static bool           g_inPopup   = false;
-static char           g_nmPopup   = ' ';
+static bool        g_wndSizein = false;
+static guint       g_wndSizeT  = 0; // timer id
 
-static bool           g_wndMovein = false;
-static guint          g_wndMoveT  = 0; // timer id
+static const char* g_ttLabel   = APP_NAME "ttip-label"; // object data id for tooltip label widget pointer
 
-static bool           g_wndSizein = false;
-static guint          g_wndSizeT  = 0; // timer id
-/*
-#ifdef _USEWKSPACE
-static WnckWindow*    g_clockWnd  = NULL;
-static WnckWorkspace* g_clockWrk  = NULL;
-#endif
-*/
-} // namespace gui
+// client msgs to other clocks
+static const char* g_ceRedock  = APP_NAME ".redock";    // call docks_send_update
+
+} // namespace cgui
+
+#endif // _USEGTK
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-bool gui::init()
+bool cgui::init()
 {
 	DEBUGLOGB;
 
-	bool ok = true;
-
-/*	if( gRun.scrsaver == false )
-		ok  = getGladeXml("main");
-
-	if( g_pGladeXml )
+	if( !gRun.pMainWindow )
 	{
-		gRun.pMainWindow =  glade_xml_get_widget(g_pGladeXml, "mainWindow");
-//		dnit();
-	}*/
+		PWidget* pScrnWidget = NULL;
 
-	if( gRun.pMainWindow == NULL )
-	{
-		if( gRun.pMainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL) )
+		if( gRun.scrsaver )
 		{
-			gtk_window_set_title(GTK_WINDOW(gRun.pMainWindow), gRun.appName);
-			gtk_window_set_decorated(GTK_WINDOW(gRun.pMainWindow), FALSE);
-			gtk_widget_set_double_buffered(gRun.pMainWindow, FALSE);
-//			gtk_widget_set_double_buffered(gRun.pMainWindow, TRUE);
-			gtk_widget_set_can_focus(gRun.pMainWindow, FALSE);
+#if _USEGTK
+			if( pScrnWidget = gtk_window_new(GTK_WINDOW_TOPLEVEL) )
+#else
+			if( pScrnWidget = new PWidget() )
+#endif
+			{
+				DEBUGLOGS("screen saver widget window created");
+#if _USEGTK
+				GdkGeometry hints;
+				GtkWindow*  pScrnWindow =   GTK_WINDOW(pScrnWidget);
+				GdkScreen*  pScreen     =   gtk_window_get_screen(pScrnWindow);
+				int         sw          =   hints.min_width  = hints.max_width  = gdk_screen_get_width (pScreen);
+				int         sh          =   hints.min_height = hints.max_height = gdk_screen_get_height(pScreen);
+#if !GTK_CHECK_VERSION(3,0,0)
+				guint16     red         =   guint16(65535.0*gCfg.bkgndRed);
+				guint16     green       =   guint16(65535.0*gCfg.bkgndGrn);
+				guint16     blue        =   guint16(65535.0*gCfg.bkgndBlu);
+				GdkColor    color       = { 0, red, green, blue };
+				gtk_widget_modify_bg                (pScrnWidget, GTK_STATE_NORMAL, &color);
+#else
+				GdkRGBA     color       = {    gCfg.bkgndRed, gCfg.bkgndGrn, gCfg.bkgndBlu, 1 };
+				gtk_widget_override_background_color(pScrnWidget, GtkStateFlags(0), &color);
+#endif
+				gtk_widget_set_app_paintable    (pScrnWidget, TRUE);
+				gtk_widget_set_can_focus        (pScrnWidget, FALSE);
+				gtk_window_set_decorated        (pScrnWindow, FALSE);
+				gtk_window_set_resizable        (pScrnWindow, FALSE);
+				gtk_window_set_keep_above       (pScrnWindow, TRUE);
+				gtk_window_set_accept_focus     (pScrnWindow, FALSE);
+				gtk_window_set_focus_on_map     (pScrnWindow, FALSE);
+				gtk_widget_set_double_buffered  (pScrnWidget, FALSE);
+				gtk_window_set_skip_pager_hint  (pScrnWindow, TRUE);
+				gtk_window_set_skip_taskbar_hint(pScrnWindow, TRUE);
+				gtk_window_set_geometry_hints   (pScrnWindow, pScrnWidget, &hints, GdkWindowHints(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE));
+				gtk_window_set_title            (pScrnWindow, APP_NAME);
+				gtk_window_resize               (pScrnWindow, sw, sh);
+				gtk_window_move                 (pScrnWindow, 0, 0);
+				gtk_widget_show_now             (pScrnWidget);
+
+				change_cursor(pScrnWidget, GDK_BLANK_CURSOR);
+#endif // _USEGTK
+			}
+		}
+
+#if _USEGTK
+		if( gRun.pMainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL) )
+//		if( gRun.pMainWindow = gRun.scrsaver ? gtk_drawing_area_new() : gtk_window_new(GTK_WINDOW_TOPLEVEL) )
+#else
+		if( gRun.pMainWindow = new PWidget() )
+#endif
+		{
+			DEBUGLOGS("clock widget window created");
+#if _USEGTK
+			GtkWindow* pMainWindow = GTK_WINDOW(gRun.pMainWindow);
+
+			gtk_widget_set_can_focus    (gRun.pMainWindow, FALSE);
+			gtk_widget_set_app_paintable(gRun.pMainWindow, TRUE);
+			gtk_window_set_default_size (pMainWindow, gCfg.clockW, gCfg.clockH);
+
+//			if( !gRun.scrsaver )
+			{
+				gtk_window_set_title(pMainWindow, gRun.appName);
+				gtk_window_set_accept_focus(pMainWindow, FALSE);
+				gtk_window_set_focus_on_map(pMainWindow, FALSE);
+				gtk_window_set_decorated(pMainWindow, FALSE);
+				gtk_window_set_resizable(pMainWindow, TRUE);
+			}
+
+#if !GTK_CHECK_VERSION(3,0,0)
+			gtk_widget_set_double_buffered(gRun.pMainWindow, TRUE);
+#endif
+//			char     clasn[128];
+//			snprintf(clasn, vectsz(clasn), "class=%s%d", APP_NAME, (int)getpid());
+//			gtk_window_set_wmclass(pMainWindow, APP_NAME, clasn);
+
+//			if( !gRun.scrsaver )
+			{
+				GdkGeometry hints;
+				GdkScreen* pScreen = gtk_window_get_screen(pMainWindow);
+				hints.min_width	   = MIN_CLOCKW;
+				hints.min_height   = MIN_CLOCKH;
+				hints.max_width	   = gdk_screen_get_width (pScreen);
+				hints.max_height   = gdk_screen_get_height(pScreen);
+				hints.base_width   = gCfg.clockW;
+				hints.base_height  = gCfg.clockH;
+
+				gtk_window_set_geometry_hints(pMainWindow, gRun.pMainWindow, &hints, GdkWindowHints(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE | GDK_HINT_BASE_SIZE));
+			}
+#ifdef DEBUGLOG
+//			if( !gRun.scrsaver )
+			{
+				gint                                  wndX,  wndY;
+				gint                                  wndW,  wndH;
+				gtk_window_get_position(pMainWindow, &wndX, &wndY);
+				gtk_window_get_size    (pMainWindow, &wndW, &wndH);
+				DEBUGLOGP("created clock window: wndX=%d, wndY=%d, wndW=%d, wndH=%d\n", wndX, wndY, wndW, wndH);
+				DEBUGLOGP("defaulted clock dims: clkW=%d, clkH=%d\n", gCfg.clockW, gCfg.clockH);
+			}
+#endif
+			if( gRun.scrsaver )
+			{
+				DEBUGLOGS("bef fullscreen parent setting");
+//				gtk_widget_set_has_window(gRun.pMainWindow, TRUE);
+//				gtk_widget_set_has_window(gRun.pMainWindow, FALSE);
+//				gtk_widget_set_parent(gRun.pMainWindow, pScrnWidget);
+				gtk_widget_set_parent_window(gRun.pMainWindow, gtk_widget_get_window(pScrnWidget));
+				gtk_window_set_destroy_with_parent(pMainWindow, TRUE);
+				gtk_window_set_transient_for(pMainWindow, GTK_WINDOW(pScrnWidget));
+				DEBUGLOGS("aft fullscreen parent setting");
+			}
+			else
+			{
+				if( gRun.minimize )
+					gtk_window_iconify(pMainWindow);
+
+				gtk_widget_set_has_tooltip(gRun.pMainWindow, gCfg.showTTips ? TRUE : FALSE);
+
+				if( gCfg.showTTips )
+				{
+					if( lgui::getXml("tooltip") && lgui::okayGUI() )
+					{
+						DEBUGLOGS("loaded tooltip xml successfully");
+						GtkWidget* pWidget = lgui::pWidget("windowTooltip");
+
+						if( pWidget )
+						{
+							DEBUGLOGS("loaded tooltip widget successfully");
+							GtkWindow* pTTipWnd = GTK_WINDOW(pWidget);
+							gtk_widget_set_tooltip_window(gRun.pMainWindow, pTTipWnd);
+
+							if( pWidget = lgui::pWidget("labelTooltip") )
+							{
+								DEBUGLOGS("loaded tooltip widget label successfully");
+								g_object_set_data(G_OBJECT(pTTipWnd), g_ttLabel, gpointer(pWidget)); 
+#if 0
+								gtk_widget_realize(pWidget=GTK_WIDGET(pTTipWnd));
+								gdk_window_set_back_pixmap(gtk_widget_get_window(pWidget), NULL, FALSE);
+
+								if( pWidget = lgui::pWidget("hboxTooltip") )
+								{
+								gtk_widget_realize(pWidget);
+								gdk_window_set_back_pixmap(gtk_widget_get_window(pWidget), NULL, FALSE);
+								}
+
+								if( pWidget = lgui::pWidget("imageTooltip") )
+								{
+								gtk_widget_realize(pWidget);
+								gdk_window_set_back_pixmap(gtk_widget_get_window(pWidget), NULL, FALSE);
+								}
+
+								if( pWidget = lgui::pWidget("labelTooltip") )
+								{
+								gtk_widget_realize(pWidget);
+								gdk_window_set_back_pixmap(gtk_widget_get_window(pWidget), NULL, FALSE);
+								}
+#endif
+							}
+						}
+					}
+				}
+			}
+
+			gRun.composed = gtk_widget_is_composited(gRun.pMainWindow) == TRUE;
+
+			DEBUGLOGP("clock screen %s composited\n", gRun.composed ? "is" : "is NOT");
+#else  // _USEGTK
+			gRun.pMainWindow->setWindowTitle(QString(gRun.appName));
+			gRun.pMainWindow->move  (gCfg.clockX, gCfg.clockY);
+			gRun.pMainWindow->resize(gCfg.clockW, gCfg.clockW);
+			gRun.pMainWindow->setAutoFillBackground(false);
+//			gRun.composed = QX11Info::isCompositingManagerRunning();
+#endif // _USEGTK
 		}
 	}
 
-	if( g_pGladeXml )
-		dnit();
-
-	if( gRun.pMainWindow )
+	if( !gRun.pMainWindow )
 	{
-		// make the top-level window listen for events for which it doesn't do by default
-//		gtk_widget_add_events(gRun.pMainWindow, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
-//		gtk_widget_add_events(gRun.pMainWindow, GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK);
-
-		#define CLOCK_EVENTS_MASK (GDK_EXPOSURE_MASK       | GDK_ENTER_NOTIFY_MASK        | \
-								   GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | \
-								   GDK_BUTTON_PRESS_MASK   | GDK_BUTTON_RELEASE_MASK)
-
-		gtk_widget_set_events(gRun.pMainWindow, gtk_widget_get_events(gRun.pMainWindow) | CLOCK_EVENTS_MASK);
-
-		// main window's event processing
-
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "button-press-event",  G_CALLBACK(on_button_press),       NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "composited-changed",  G_CALLBACK(on_composited_changed), NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "configure-event",     G_CALLBACK(on_configure),          NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "delete_event",        G_CALLBACK(on_delete),             NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "destroy_event",       G_CALLBACK(on_destroy),            NULL);
-//		g_signal_connect(G_OBJECT(gRun.pMainWindow), "drag_end_event",      G_CALLBACK(on_drag_end),           NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "enter-notify-event",  G_CALLBACK(on_enter_notify),       NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "expose-event",        G_CALLBACK(on_expose),             NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "focus-in-event",      G_CALLBACK(on_focus_in),           NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "key-press-event",     G_CALLBACK(on_key_press),          NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "leave-notify-event",  G_CALLBACK(on_leave_notify),       NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "query-tooltip",       G_CALLBACK(on_tooltip_show),       NULL);
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "scroll-event",        G_CALLBACK(on_wheel_scroll),       NULL);
-//		g_signal_connect(G_OBJECT(gRun.pMainWindow), "window-state-event",  G_CALLBACK(on_window_state),       NULL);
-
-		if( gRun.scrsaver )
-		g_signal_connect(G_OBJECT(gRun.pMainWindow), "motion-notify-event", G_CALLBACK(on_motion_notify),      NULL);
+		DEBUGLOGR(1);
+		return false;
 	}
 
-	// TODO: move all of this somewhere else more appropriate?
+	if( !gRun.composed && !gRun.scrsaver )
+		draw::grab(); // TODO: move into clock window event instead, if can
+
+	if( lgui::okayGUI() )
+		dnit();
+
+#if _USEGTK
+	// make the top-level window listen for events for which it doesn't do by default
+
+	#define CLOCK_EVENTS_MASK (GDK_EXPOSURE_MASK       | GDK_ENTER_NOTIFY_MASK        | GDK_LEAVE_NOTIFY_MASK  | \
+	                           GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_MOTION_MASK | \
+	                           GDK_BUTTON_PRESS_MASK   | GDK_BUTTON_RELEASE_MASK      | \
+	                           GDK_SCROLL_MASK)
+
+	gtk_widget_set_events(gRun.pMainWindow, gtk_widget_get_events(gRun.pMainWindow) | CLOCK_EVENTS_MASK);
+
+	// main window's event processing
+
+	GObject* pMainObj = G_OBJECT(gRun.pMainWindow);
+
+	g_signal_connect(pMainObj, "activate-focus",      G_CALLBACK(on_activate_focus),     NULL);
+	g_signal_connect(pMainObj, "button-press-event",  G_CALLBACK(on_button_press),       NULL);
+#if !GTK_CHECK_VERSION(3,0,0)
+	g_signal_connect(pMainObj, "client-event",        G_CALLBACK(on_client_msg),         NULL);
+#endif
+	g_signal_connect(pMainObj, "composited-changed",  G_CALLBACK(on_composited_changed), NULL);
+	g_signal_connect(pMainObj, "configure-event",     G_CALLBACK(on_configure),          NULL);
+#if 0
+	g_signal_connect(pMainObj, "damage-event",        G_CALLBACK(on_damage),             NULL);
+#endif
+	g_signal_connect(pMainObj, "delete-event",        G_CALLBACK(on_delete),             NULL);
+	g_signal_connect(pMainObj, "destroy_event",       G_CALLBACK(on_destroy),            NULL);
+	g_signal_connect(pMainObj, "enter-notify-event",  G_CALLBACK(on_enter_notify),       NULL);
+#if 0
+	g_signal_connect(pMainObj, "event",               G_CALLBACK(on_event),              NULL);
+#endif
+#if GTK_CHECK_VERSION(3,0,0)
+	g_signal_connect(pMainObj, "damage-event",        G_CALLBACK(on_damage),             NULL);
+	g_signal_connect(pMainObj, "draw",                G_CALLBACK(on_draw),               NULL);
+#else
+	g_signal_connect(pMainObj, "expose-event",        G_CALLBACK(on_expose),             NULL);
+#endif
+#if 0
+	g_signal_connect(pMainObj, "focus-in-event",      G_CALLBACK(on_focus_in),           NULL);
+#endif
+	g_signal_connect(pMainObj, "key-press-event",     G_CALLBACK(on_key_press),          NULL);
+	g_signal_connect(pMainObj, "leave-notify-event",  G_CALLBACK(on_leave_notify),       NULL);
+	g_signal_connect(pMainObj, "map-event",           G_CALLBACK(on_map),                NULL);
+	g_signal_connect(pMainObj, "query-tooltip",       G_CALLBACK(on_query_tooltip),      NULL);
+	g_signal_connect(pMainObj, "screen-changed",      G_CALLBACK(on_screen_changed),     NULL);
+	g_signal_connect(pMainObj, "unmap-event",         G_CALLBACK(on_unmap),              NULL);
+	g_signal_connect(pMainObj, "scroll-event",        G_CALLBACK(on_wheel_scroll),       NULL);
+	g_signal_connect(pMainObj, "window-state-event",  G_CALLBACK(on_window_state),       NULL);
+
+	if( gRun.scrsaver )
+	g_signal_connect(pMainObj, "motion-notify-event", G_CALLBACK(on_motion_notify),      NULL);
+#else
+//	gRun.pMainWindow->connect(SIGNAL(showEvent), SLOT(on_map));
+#endif // _USEGTK
+
+	// TODO: move all of this somewhere else more appropriate? call from main?
+	//       since this is 'putting the cart before the horse'?
 
 	// set the initial theme to be used at startup
 
-	DEBUGLOGP("startup theme is '%s'\n", gCfg.themeFile);
+	DEBUGLOGP("startup theme path is '%s'\n", gCfg.themePath);
+	DEBUGLOGP("startup theme file is '%s'\n", gCfg.themeFile);
 
-	 ThemeEntry* pTE    = NULL;
-	bool         direct = gCfg.themePath[0] && gCfg.themeFile[0];
+	ThemeEntry ts;
+	bool       direct = gCfg.themePath[0] && gCfg.themeFile[0];
+
+	memset(&ts, 0, sizeof(ts));
 
 	if( direct )
 	{
 		DEBUGLOGS("  startup theme directly accessible");
 
-		pTE        = (ThemeEntry*)g_malloc0(sizeof(ThemeEntry));
-		pTE->pPath =  g_string_new(gCfg.themePath);
-		pTE->pFile =  g_string_new(gCfg.themeFile);
+		ts.pPath  = g_string_new(gCfg.themePath);
+		ts.pFile  = g_string_new(gCfg.themeFile);
+		ts.pName  = g_string_new("");
+		ts.pModes = g_string_new("");
 	}
 	else
 	if( gCfg.themeFile[0] )
@@ -229,17 +436,16 @@ bool gui::init()
 		ThemeList*     tl;
 		theme_list_get(tl);
 
+		// TODO: can now call a theme_list_find function to replace all of this?
+
 		for( te = theme_list_beg(tl); !theme_list_end(tl); te = theme_list_nxt(tl) )
 		{
 			if( strcmp(gCfg.themeFile, te.pFile->str) == 0 ||
 				strcmp(gCfg.themeFile, te.pName->str) == 0 )
 			{
 				DEBUGLOGP("  theme found - %s, %s, %s\n", te.pName->str, te.pPath->str, te.pFile->str);
-
-				pTE        = (ThemeEntry*)g_malloc0(sizeof(ThemeEntry));
-				pTE->pPath =  g_string_new(te.pPath->str);
-				pTE->pFile =  g_string_new(te.pFile->str);
-				direct     =  true;
+				theme_ntry_cpy(ts, te);
+				direct = true;
 				break;
 			}
 		}
@@ -248,272 +454,142 @@ bool gui::init()
 		theme_list_del(tl);
 	}
 
-	if( pTE )
+	if( ts.pPath && ts.pPath->str && ts.pPath->str[0] )
 	{
-//		strvcpy(gCfg.themePath, pTE->pPath->str);
-//		strvcpy(gCfg.themeFile, pTE->pFile->str);
-
-		change_theme(pTE, NULL);
+		DEBUGLOGS("  changing startup theme to one found");
+		change_theme(NULL, ts, false);
 
 		if( direct )
-		{
-			g_string_free(pTE->pFile, TRUE);
-			g_string_free(pTE->pPath, TRUE);
-			g_free(pTE);
-		}
+			theme_ntry_del(ts);
+	}
+	else
+	{
+		DEBUGLOGS("  theme not found in list");
+		change_theme(NULL, ts, false);
 	}
 
 	DEBUGLOGE;
-	return ok;
+	return true;
 }
 
 // -----------------------------------------------------------------------------
-void gui::dnit(bool clrPopup)
+void cgui::dnit(bool clrPopup, bool unloadGUI)
 {
 	DEBUGLOGB;
 
-	if( g_pGladeXml )
-	{
-		DEBUGLOGS("clearing glade object");
-		g_clear_object(&g_pGladeXml);
-	}
-
-	pGladeXml = g_pGladeXml = NULL;
+#if _USEGTK
+//	lgui::dnit();
 
 	if( clrPopup )
 	{
+		if( g_pPopupDlg )
+		{
+			if( GTK_IS_WIDGET(g_pPopupDlg) )
+			{
+				DEBUGLOGS("destroying popup dbox");
+				gtk_widget_destroy(GTK_WIDGET(g_pPopupDlg));
+			}
+
+//			DEBUGLOGS("unrefing popup dbox");
+//			g_object_unref(g_pPopupDlg);
+
+//			DEBUGLOGS("dniting lgui");
+//			lgui::dnit();
+		}
+
 		DEBUGLOGS("clearing popup tracking vals");
 		g_pPopupDlg = NULL;
 		g_inPopup   = false;
 		g_nmPopup   = ' ';
 	}
 
-	DEBUGLOGE;
-}
-/*
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-const gchar* gui::getGladeFilename()
-{
-#ifdef _RELEASE
-	return PKGDATA_DIR "/glade/cairo-clock.glade";
-#else
-//	return "../glade/cairo-clock-new.glade";
-
-	static char uipath[PATH_MAX];
-	static bool first = true;
-
-	if( first )
-	{
-		first              = false;
-		const char* anpath = get_user_appnm_path();
-
-		if( anpath )
-		{
-			strvcpy(uipath,  anpath ? anpath : ".");
-			strvcat(uipath, "/glade/cairo-clock.glade");
-
-			if( anpath )
-				delete [] anpath;
-		}
-		else
-		{
-			strvcpy(uipath, "../glade/cairo-clock-new.glade");
-		}
-	}
-
-	return uipath;
-#endif
-}
-*/
-/*
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-struct GladeLoad
-{
-	GString*  uipath;   // full path to the glade xml file to be loaded
-	GString*  root;     // name of the root glade element from which to start loading
-	GCallback callBack; // where to go once glade loading has finished
-	bool      okay;     // whether the loading was a success
-};
-
-// -----------------------------------------------------------------------------
-static gpointer load_glade_func(gpointer data)
-{
-	DEBUGLOGB;
-
-	if( data )
-	{
-		GladeLoad* pGD   = (GladeLoad*)data;
-
-		DEBUGLOGP("before worker threaded loading of:\n\t%s\n", pGD->uipath->str);
-
-		gdk_threads_enter();
-		gui::g_pGladeXml =  gui::  pGladeXml  = glade_xml_new(pGD->uipath->str, pGD->root->len ? pGD->root->str : NULL, NULL);
-		pGD->okay        =  gui::g_pGladeXml != NULL;
-		gdk_threads_enter();
-
-		DEBUGLOGP("after loading, which %s\n", pGD->okay ? "succeeded" : "failed");
-
-		g_string_free(pGD->uipath, TRUE);
-		g_string_free(pGD->root,   TRUE);
-
-		DEBUGLOGS("before making the callBack call");
-
-		pGD->callBack();
-
-		DEBUGLOGS("after making the callBack call");
-	}
+	DEBUGLOGS("dniting lgui");
+	lgui::dnit(unloadGUI);
+#endif // _USEGTK
 
 	DEBUGLOGE;
-	return 0;
-}
-*/
-// -----------------------------------------------------------------------------
-bool gui::getGladeXml(const char* name, const char* root, GCallback callBack)
-{
-	DEBUGLOGB;
-
-	char        uipath[PATH_MAX];
-	const char* anpath = get_user_appnm_path();
-	bool  okay         = false;
-
-	strvcpy(uipath,  anpath ? anpath : ".");
-	strvcat(uipath, "/glade/");
-	strvcat(uipath,  name);
-	strvcat(uipath, ".glade");
-
-	if( anpath )
-		delete [] anpath;
-
-/*	if( callBack )
-	{
-		static GladeLoad gladeLoad;
-
-		gladeLoad.uipath   = g_string_new(uipath);
-		gladeLoad.root     = g_string_new(root ? root : "");
-		gladeLoad.callBack = callBack;
-
-		DEBUGLOGP("before async loading via worker thread of %s.glade\n", name);
-
-		GThread* pThread = g_thread_try_new(__func__, load_glade_func, &gladeLoad, NULL);
-
-		DEBUGLOGP("after worker thread creation which %s\n", pThread ? "succeeded" : "failed");
-
-		if( pThread )
-		{
-			g_thread_unref(pThread);
-			okay = true;
-		}
-	}*/
-
-	if( okay == false )
-	{
-/*		GTimeVal            ct;
-		g_get_current_time(&ct);
-		DEBUGLOGP("before sync loading of %s.glade (%d.%d)\n", name, (int)ct.tv_sec, (int)ct.tv_usec);*/
-
-		g_pGladeXml = pGladeXml = glade_xml_new(uipath, root, NULL);
-		okay = g_pGladeXml != NULL;
-
-/*		g_get_current_time(&ct);
-		DEBUGLOGP("after loading, which %s (%d.%d)\n", ok ? "succeeded" : "failed", (int)ct.tv_sec, (int)ct.tv_usec);*/
-
-		if( callBack )
-			callBack();
-	}
-
-	DEBUGLOGE;
-	return okay;
 }
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::initDragDrop()
+void cgui::initDragDrop()
 {
+#if _USEGTK
 #ifdef _ENABLE_DND
-//	static gchar          target_type[] =     "text/uri-list";
+//	static char           target_type[] =     "text/uri-list";
 //	static GtkTargetEntry target_list[] = { { target_type, GTK_TARGET_OTHER_APP, TGT_SEL_STR } };
 
+	DEBUGLOGB;
 	DEBUGLOGS("bef setting drag destination");
+
 //	gtk_drag_dest_set(gRun.pMainWindow, GTK_DEST_DEFAULT_ALL, target_list, G_N_ELEMENTS(target_list), GDK_ACTION_COPY);
 	gtk_drag_dest_set(gRun.pMainWindow, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_COPY);
 	g_signal_connect (G_OBJECT(gRun.pMainWindow), "drag_data_received", G_CALLBACK(on_drag_data_received), NULL);
 	gtk_drag_dest_add_uri_targets(gRun.pMainWindow);
-	DEBUGLOGS("aft  setting drag destination");
+
+	DEBUGLOGS("aft setting drag destination");
+	DEBUGLOGE;
+#endif
 #endif
 }
 
+#if _USEGTK
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::initToggleBtn(const char* name, const char* event, int value, TOGBTNCB callback)
+void cgui::initToggleBtn(const char* name, const char* event, int value, TOGBTNCB callback)
 {
-	GtkWidget* pButton = glade_xml_get_widget(g_pGladeXml, name);
+	if( lgui::okayGUI() )
+	{
+		GtkWidget* pButton = lgui::pWidget(name);
 
-	if( pButton )
-	{
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pButton), value);
-		g_signal_connect(G_OBJECT(pButton), event, G_CALLBACK(callback), gRun.pMainWindow);
-	}
-	else
-	{
-		DEBUGLOGP("failed to get/set toggle button %s's value to %d and connect its %s event\n", name, value, event);
+		if( pButton )
+		{
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(pButton), value);
+			g_signal_connect(G_OBJECT(pButton), event, G_CALLBACK(callback), gRun.pMainWindow);
+		}
+#if 0
+		else
+		{
+			DEBUGLOGP("failed to get/set toggle button %s's value to %d and connect its %s event\n", name, value, event);
+		}
+#endif
 	}
 }
+#endif // _USEGTK
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::initWorkspace()
+void cgui::initWorkspace()
 {
 	DEBUGLOGB;
 
-#ifdef _USEWKSPACE
-
-	WnckScreen* screen = wnck_screen_get_default();
-
-	if( screen )
-	{
-		DEBUGLOGS("got default screen");
-		wnck_screen_force_update(screen);
-
-		if( !gCfg.sticky && gCfg.clockWS )
-		{
-			DEBUGLOGP("sticky is off and workspace is %d\n", gCfg.clockWS);
-			WnckWindow* window = wnck_window_get(GDK_WINDOW_XWINDOW(gRun.pMainWindow->window));
-
-			if( window && !wnck_window_is_pinned(window) )
-			{
-				DEBUGLOGS("got non-pinned window");
-				WnckWorkspace* trgtWrk = wnck_screen_get_workspace       (screen, gCfg.clockWS-1);
-				WnckWorkspace* actvWrk = wnck_screen_get_active_workspace(screen);
-
-				if( trgtWrk && actvWrk && trgtWrk != actvWrk )
-				{
-					DEBUGLOGS("got target workspace is diff from current so moving window to target");
- 					wnck_window_move_to_workspace(window, trgtWrk);
-				}
-			}
-		}
-	}
-
-//	g_signal_connect(screen, "active-workspace-changed", G_CALLBACK(on_active_workspace_changed), NULL);
-
-//	gulong wnck_screen_get_background_pixmap(WnckScreen* screen); // can use for non-composited background drawing?
-
-#else  // _USEWKSPACE
-
 	if( !gCfg.sticky && gCfg.clockWS )
-		g_window_space(gRun.pMainWindow, gCfg.clockWS-1);
-
+	{
+#if _USEGTK
+#if 0
+		int cws =   g_current_workspace(gRun.pMainWindow);
+		if( cws == (gCfg.clockWS & cws) )
+			g_window_workspace(gRun.pMainWindow, cws);
+#else
+		g_window_workspace(gRun.pMainWindow, gCfg.clockWS-1);
+#endif
+#if _USEWKSPACE
+		WnckScreen*      screen = wnck_screen_get_default();
+#if 0
+		g_signal_connect(screen, "active-workspace-changed", G_CALLBACK(on_workspace_active_changed), NULL);
+#endif
+		g_signal_connect(screen, "background-changed",       G_CALLBACK(on_workspace_bkgrnd_changed), NULL);
 #endif // _USEWKSPACE
+#endif // _USEGTK
+	}
 
 	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-void gui::dnitWorkspace()
+void cgui::dnitWorkspace()
 {
-#ifdef _USEWKSPACE
+#if _USEWKSPACE
 	DEBUGLOGB;
 #if GTK_CHECK_VERSION(3,0,0)
 	wnck_shutdown();
@@ -522,15 +598,76 @@ void gui::dnitWorkspace()
 #endif
 }
 
+#if _USEGTK
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::stopApp()
+void cgui::send_client_msg(const char* msg)
+{
+	DEBUGLOGB;
+
+#if !GTK_CHECK_VERSION(3,0,0)
+	DEBUGLOGS("bef creating a new event");
+	GdkEvent* e  =  gdk_event_new(GDK_CLIENT_EVENT);
+	DEBUGLOGS("aft creating a new event");
+
+	if( e )
+	{
+		GdkEventClient* ec = (GdkEventClient*)e;
+
+		DEBUGLOGS("bef creating a new atom");
+		GdkAtom a = gdk_atom_intern_static_string(msg);
+		DEBUGLOGS("aft creating a new atom");
+
+		if( a )
+		{
+			// reset all of these just to make sure
+			ec->type         = GDK_CLIENT_EVENT;
+			ec->window       = NULL;
+			ec->send_event   = TRUE;
+			ec->message_type =  a;
+			ec->data_format  = 32;
+			ec->data.l[0]    =  0;
+			ec->data.l[1]    =  0;
+			ec->data.l[2]    =  0;
+			ec->data.l[3]    =  0;
+			ec->data.l[4]    =  0;
+
+			DEBUGLOGS("bef sending the client msg event to all");
+			gdk_event_send_clientmessage_toall(e);
+			DEBUGLOGS("aft sending the client msg event to all");
+		}
+
+		gdk_event_free(e);
+	}
+#endif // !GTK_CHECK_VERSION(3,0,0)
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+void cgui::stopApp()
 {
 	DEBUGLOGB;
 	gRun.appStop = true;
 
+	if( gCfg.showInTasks )
+	{
+		DEBUGLOGS("bef sending the 'redock' client msg");
+		send_client_msg(g_ceRedock);
+		DEBUGLOGS("aft sending the 'redock' client msg");
+	}
+
 	if( gRun.pMainWindow )
 	{
+		if( gRun.scrsaver )
+		{
+			GtkWindow* pScrnWindow = gtk_window_get_transient_for(GTK_WINDOW(gRun.pMainWindow));
+			gtk_widget_destroy(GTK_WIDGET(pScrnWindow));
+			DEBUGLOGS("bkgnd window widget destroyed");
+			pScrnWindow = NULL;
+		}
+
 		gtk_widget_destroyed(gRun.pMainWindow, &gRun.pMainWindow);
 		DEBUGLOGS("main window widget destroyed");
 	}
@@ -547,34 +684,40 @@ void gui::stopApp()
 *******************************************************************************/
 
 // -----------------------------------------------------------------------------
-void gui::loadMenuPopup()
+void cgui::loadMenuPopupFunc()
+{
+	loadMenuPopup();
+}
+
+// -----------------------------------------------------------------------------
+bool cgui::loadMenuPopup()
 {
 	DEBUGLOGB;
 
-	if( !g_pGladeXml )
+	if(!lgui::okayGUI() )
 	{
 		DEBUGLOGS("exit(1)");
-//		gdk_threads_enter(); // TODO: necessary?
+//		g_sync_threads_gui_beg(); // TODO: necessary?
 		dnit();
-//		gdk_threads_leave();
-		return;
+//		g_sync_threads_gui_end();
+		return false;
 	}
 
 	DEBUGLOGS("before popupMenu widget loading");
-//	gdk_threads_enter();
-	GtkWidget* pPopUpMenu = glade_xml_get_widget(g_pGladeXml, "popUpMenu");
-//	gdk_threads_leave();
+//	g_sync_threads_gui_beg();
+	GtkWidget* pPopUpMenu = lgui::pWidget("popUpMenu");
+//	g_sync_threads_gui_end();
 	DEBUGLOGS("after popupMenu widget loading");
 
 	if( !pPopUpMenu )
 	{
 		DEBUGLOGS("exit(2)");
-		return;
+		return false;
 	}
 
 	static const char* mis[] =
 	{
-		"prefs", "chart", "alarm", "chime", "date", "info", "help", "quit"
+		"prefs", "chart", "alarm", "chime", "date", "info", "help", "quit", "tzone"
 	};
 
 	static GCallback   cbs[] =
@@ -582,7 +725,8 @@ void gui::loadMenuPopup()
 		G_CALLBACK(on_prefs_activate), G_CALLBACK(on_chart_activate),
 		G_CALLBACK(on_alarm_activate), G_CALLBACK(on_chime_activate),
 		G_CALLBACK(on_date_activate),  G_CALLBACK(on_info_activate),
-		G_CALLBACK(on_help_activate),  G_CALLBACK(on_quit_activate)
+		G_CALLBACK(on_help_activate),  G_CALLBACK(on_quit_activate),
+		G_CALLBACK(on_tzone_activate)
 	};
 
 	char       tstr[1024];
@@ -593,115 +737,75 @@ void gui::loadMenuPopup()
 	{
 		snprintf(tstr, vectsz(tstr), "%sMenuItem", mis[i]);
 
-//		gdk_threads_enter();
-		pMenuItem = glade_xml_get_widget(g_pGladeXml, tstr);
+//		g_sync_threads_gui_beg();
+		pMenuItem = lgui::pWidget(tstr);
 
 		if( pMenuItem )
 			g_signal_connect(G_OBJECT(pMenuItem), "activate", cbs[i], gRun.pMainWindow);
-//		gdk_threads_leave();
+//		g_sync_threads_gui_end();
 	}
 	DEBUGLOGS("after popupMenu item widget loading");
 
 	g_signal_connect(G_OBJECT(pPopUpMenu), "selection-done", G_CALLBACK(on_popupmenu_done), gRun.pMainWindow);
 
 	DEBUGLOGS("before popupMenu displaying");
-//	gdk_threads_enter();
+//	g_sync_threads_gui_beg();
 	gtk_menu_popup(GTK_MENU(pPopUpMenu), NULL, NULL, NULL, NULL, 3, gtk_get_current_event_time());
-//	gdk_threads_leave();
+//	g_sync_threads_gui_end();
 	DEBUGLOGS("after popupMenu displaying");
 
 	DEBUGLOGS("exit(3)");
+	return true;
 }
-/*
-#ifdef _USEWKSPACE
+
 // -----------------------------------------------------------------------------
-void gui::on_active_workspace_changed(WnckScreen* screen, WnckWorkspace* prevSpace, gpointer userData)
+void cgui::on_activate_focus(GtkWindow* pWidget, gpointer userData)
+{
+	DEBUGLOGB;
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+void cgui::on_alarm_activate(GtkMenuItem* pMenuItem, gpointer userData)
 {
 	DEBUGLOGB;
 
-	if( gRun.scrsaver && !gRun.appStart )
+	GtkWidget* pDialog =
+		gtk_message_dialog_new((GtkWindow*)userData,
+			GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
+			"No alarm settings/usage available yet.\n\nSorry.");
+
+	if( pDialog )
 	{
-		stopApp();
-		DEBUGLOGS("exit(1)");
-		return;
+		gtk_window_set_transient_for(GTK_WINDOW(pDialog), GTK_WINDOW(userData));
+		gtk_window_set_position(GTK_WINDOW(pDialog), GTK_WIN_POS_CENTER);
+		gtk_window_set_title(GTK_WINDOW(pDialog), gRun.appName);
+		gtk_dialog_run(GTK_DIALOG(pDialog));
+		on_popup_close(pDialog, NULL, userData);
+		if( GTK_IS_WIDGET(pDialog) )
+			gtk_widget_destroy(pDialog);
 	}
 
-	if( gCfg.sticky || !gCfg.clockWS )
-	{
-		DEBUGLOGS("exit(2)");
-		return;
-	}
-
-	WnckWorkspace* actvWrk = wnck_screen_get_active_workspace(screen);
-	WnckWorkspace* trgtWrk = wnck_screen_get_workspace       (screen, gCfg.clockWS-1);
-
-	if( actvWrk != trgtWrk )
-	{
-		DEBUGLOGS("exit(3)");
-		return;
-	}
-
-//	g_clockWnd    = wnck_window_get(GDK_WINDOW_XWINDOW(gRun.pMainWindow->window));
-//	g_clockWrk    = wnck_window_get_workspace(g_clockWnd);
-
-	WnckWindow*    g_clockWnd = wnck_window_get(GDK_WINDOW_XWINDOW(gRun.pMainWindow->window));
-	WnckWorkspace* g_clockWrk = wnck_window_get_workspace(g_clockWnd);
-
-	gRun.renderIt = cclock::sticky() || !g_clockWrk || !actvWrk || (g_clockWrk == actvWrk);
-	gRun.renderUp = gRun.renderIt    && !gRun.appStart;
-
-//	if( gRun.scrsaver && !gRun.appStart )
-//	{
-//		stopApp();
-//	}
-//	else
-//	if( gRun.renderUp && !cclock::sticky() && (g_clockWrk && g_clockWrk != actvWrk) )
-	if( gRun.renderIt )
-	{
-		DEBUGLOGS("queueing redraw request");
-//		TODO: best to fire off draw timer so renderIt, etc., are handled properly
-		gtk_widget_queue_draw(gRun.pMainWindow);
-	}
-
-//	DEBUGLOGP("clockWnd  is %s, clockWrk is %s\n", g_clockWnd    ? "okay" : "null", g_clockWrk ? "okay" : "null");
-//	DEBUGLOGP("rendering is %s\n", gRun.renderIt ? "on"   : "off");
-
-//	if( gRun.renderIt )
-//	{
-////		render_time_handler(gRun.pMainWindow);
-//	}
-//	else
-//	{
-//		if( gRun.renderHandlerId )
-//		{
-//			g_source_remove(gRun.renderHandlerId);
-//			gRun.renderHandlerId = 0;
-//		}
-//	}
-
-//	const char* wsName = wnck_workspace_get_name(actvWrk);
-//	notify_notification_update(m_notification, N_SUMMARY, wsName, N_ICON);
-//	notify_notification_show  (m_notification, NULL);
-
-	DEBUGLOGS("exit(4)");
+	DEBUGLOGE;
 }
-#endif // _USEWKSPACE*/
-/*
+#if 0
 // -----------------------------------------------------------------------------
-void gui::on_alpha_screen_changed(GtkWidget* pWidget, GdkScreen* pOldScreen, GtkWidget* pLabel)
+void cgui::on_alpha_screen_changed(GtkWidget* pWidget, GdkScreen* pOldScreen, GtkWidget* pLabel)
 {
-/*	GdkScreen*   pScreen   = gtk_widget_get_screen(pWidget);
+#if 0
+	GdkScreen*   pScreen   = gtk_widget_get_screen(pWidget);
 	GdkColormap* pColormap = gdk_screen_get_rgba_colormap(pScreen);
-      
+
 	if( pColormap == NULL )
 		pColormap =  gdk_screen_get_rgb_colormap(pScreen);
 
-	gtk_widget_set_colormap(pWidget, pColormap);*/
-/*	update_colormap(pWidget);
-}*/
-
+	gtk_widget_set_colormap(pWidget, pColormap);
+#endif
+	update_colormap(pWidget);
+}
+#endif
 // -----------------------------------------------------------------------------
-gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdge edge)
+gboolean cgui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdge edge)
 {
 	DEBUGLOGB;
 
@@ -730,41 +834,48 @@ gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWi
 	else
 	if( pButton->button == 3 ) // typically right-click for window context menu
 	{
-		if( g_pGladeXml )
+		bool nogo = true;
+
+		if( lgui::okayGUI() )
 		{
 			if( !g_inPopup )
 			{
-				DEBUGLOGS("clearing previously loaded glade context menu");
+				DEBUGLOGS("clearing previously loaded lgui context menu");
 				dnit();
 			}
 		}
 
-		if( g_pGladeXml == NULL )
+		if(!lgui::okayGUI() )
 		{
-			DEBUGLOGS("attempting to load/popup glade context menu");
+			DEBUGLOGS("attempting to load/popup lgui context menu");
 
 			if( true ) // true for single threaded, false for multi-threaded
 			{
-				getGladeXml("menu");
-				loadMenuPopup();
+				nogo = !lgui::getXml("menu") || !loadMenuPopup();
 			}
 			else
-				getGladeXml("menu", NULL, loadMenuPopup);
-
-/*			if( g_pGladeXml )
 			{
-				GtkWidget* pPopUpMenu = glade_xml_get_widget(g_pGladeXml, "popUpMenu");
+				lgui::getXml("menu", NULL, loadMenuPopupFunc);
+				nogo = false;
+			}
+#if 0
+			if( lgui::okayGUI() )
+			{
+				GtkWidget* pPopUpMenu = lgui::pWidget("popUpMenu");
 
 				if( pPopUpMenu )
 				{
 					static const char* mis[] =
-					{ "prefs", "chart", "alarm", "chime", "date", "info", "help", "quit" };
+					{ "prefs", "chart", "alarm", "chime", "date", "info", "help", "quit", "tzone" };
 
 					static GCallback   cbs[] =
-					{ G_CALLBACK(on_prefs_activate), G_CALLBACK(on_chart_activate),
-					  G_CALLBACK(on_alarm_activate), G_CALLBACK(on_chime_activate),
-					  G_CALLBACK(on_date_activate),  G_CALLBACK(on_info_activate),
-					  G_CALLBACK(on_help_activate),  G_CALLBACK(on_quit_activate) };
+					{
+						G_CALLBACK(on_prefs_activate), G_CALLBACK(on_chart_activate),
+						G_CALLBACK(on_alarm_activate), G_CALLBACK(on_chime_activate),
+						G_CALLBACK(on_date_activate),  G_CALLBACK(on_info_activate),
+						G_CALLBACK(on_help_activate),  G_CALLBACK(on_quit_activate),
+						G_CALLBACK(on_tzone_activate)
+					};
 
 					char       tstr[1024];
 					GtkWidget* pMenuItem;
@@ -772,7 +883,7 @@ gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWi
 					for( size_t i = 0; i < vectsz(mis); i++ )
 					{
 						snprintf(tstr, vectsz(tstr), "%sMenuItem", mis[i]);
-						pMenuItem = glade_xml_get_widget(g_pGladeXml, tstr);
+						pMenuItem = lgui::pWidget(tstr);
 						g_signal_connect(G_OBJECT(pMenuItem), "activate", cbs[i], gRun.pMainWindow);
 					}
 
@@ -780,18 +891,38 @@ gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWi
 				}
 				else
 				{
-					DEBUGLOGS("didn't load/popup glade context menu (3)");
+					DEBUGLOGS("didn't load/popup lgui context menu (3)");
 					dnit();
 				}
 			}
 			else
 			{
-				DEBUGLOGS("didn't load/popup glade context menu (2)");
-			}*/
+				DEBUGLOGS("didn't load/popup lgui context menu (2)");
+			}
+#endif
 		}
-		else
+
+		if( nogo )
 		{
-			DEBUGLOGS("didn't load/popup glade context menu (1)");
+			DEBUGLOGS("didn't load/popup lgui context menu (1)");
+
+			GtkWidget* pPopUpMenu = gtk_menu_new();
+			GtkWidget* pMenuItem  = gtk_menu_item_new_with_label("Quit");
+
+			if( pPopUpMenu && pMenuItem )
+			{
+				DEBUGLOGS("created popup menu and its quit item");
+
+				gtk_widget_show(pMenuItem);
+				gtk_widget_show(pPopUpMenu);
+
+				gtk_menu_shell_append(GTK_MENU_SHELL(pPopUpMenu), pMenuItem);
+
+				g_signal_connect(G_OBJECT(pMenuItem),  "activate",       G_CALLBACK(on_quit_activate),  gRun.pMainWindow);
+				g_signal_connect(G_OBJECT(pPopUpMenu), "selection-done", G_CALLBACK(on_popupmenu_done), gRun.pMainWindow);
+
+				gtk_menu_popup  (GTK_MENU(pPopUpMenu), NULL, NULL, NULL, NULL, pButton->button, pButton->time);
+			}
 		}
 	}
 
@@ -800,53 +931,175 @@ gboolean gui::on_button_press(GtkWidget* pWidget, GdkEventButton* pButton, GdkWi
 }
 
 // -----------------------------------------------------------------------------
-void gui::on_composited_changed(GtkWidget* pWidget, gpointer userData)
+static void on_chart_realize(GtkWidget* pWidget, gpointer data)
 {
 	DEBUGLOGB;
-	DEBUGLOGF("%s\n", "entry");
 
-	update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, true);
+	if( lgui::okayGUI() )
+	{
+		GtkWidget* pChart = lgui::pWidget("drawingAreaChart");
 
-	DEBUGLOGF("%s\n", "exit");
+		if( pChart )
+			chart::init(pChart);
+	}
+
 	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-// The ::configure-event signal will be emitted when the size, position or
-// stacking of the widget's window has changed.
-// -----------------------------------------------------------------------------
-gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpointer userData)
+void cgui::on_chart_activate(GtkMenuItem* pMenuItem, gpointer data)
 {
 	DEBUGLOGB;
 
-	Settings    tcfg;
-//	GtkWidget*  pWidget; // NOTE: stepping on passed in pWidget instead of using local, so actual window widget is no longer available
+	GtkWidget* pDialog = popup_activate('c', "chart", "windowChart");
 
-	gint newX = pEvent->x;
-	gint newY = pEvent->y;
-	gint newW = pEvent->width;
-	gint newH = pEvent->height;
-/*
+	if( pDialog )
+	{
+		g_signal_connect(G_OBJECT(pDialog), "delete_event", G_CALLBACK(on_popup_close),   NULL);
+		g_signal_connect(G_OBJECT(pDialog), "realize",      G_CALLBACK(on_chart_realize), NULL);
+		setPopup(pDialog, true, 'c');
+	}
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+void cgui::on_chime_activate(GtkMenuItem* pMenuItem, gpointer userData)
+{
+	DEBUGLOGB;
+
+	GtkWidget* pDialog =
+		gtk_message_dialog_new(GTK_WINDOW(userData),
+			GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
+			"No chime settings/usage available yet.\n\nSorry.");
+
+	if( pDialog )
+	{
+		gtk_window_set_transient_for(GTK_WINDOW(pDialog), GTK_WINDOW(userData));
+		gtk_window_set_position(GTK_WINDOW(pDialog), GTK_WIN_POS_CENTER);
+		gtk_window_set_title(GTK_WINDOW(pDialog), gRun.appName);
+		gtk_dialog_run(GTK_DIALOG(pDialog));
+		on_popup_close(pDialog, NULL, userData);
+		if( GTK_IS_WIDGET(pDialog) )
+			gtk_widget_destroy(pDialog);
+	}
+
+	DEBUGLOGE;
+}
+
+#if !GTK_CHECK_VERSION(3,0,0)
+// -----------------------------------------------------------------------------
+gboolean cgui::on_client_msg(GtkWidget* pWidget, GdkEventClient* pEventClient, gpointer userData)
+{
+	DEBUGLOGB;
+
+	if( pEventClient && pEventClient->message_type )
+	{
+		DEBUGLOGS("received a client event msg");
+		char* an = gdk_atom_name(pEventClient->message_type);
+
+		if( an )
+		{
+			DEBUGLOGP("atom name is '%s'\n", an);
+
+			if( strstr(an, APP_NAME) != 0 )
+			{
+				DEBUGLOGS("msg is from a " APP_NAME " clock");
+
+				if( strcmp(an, g_ceRedock) == 0 )
+				{
+					DEBUGLOGS("updating my dock icon & label as suggested");
+					docks_send_update();
+				}
+			}
+
+			g_free(an);
+		}
+	}
+
+	DEBUGLOGE;
+	return FALSE;
+}
+#endif // !GTK_CHECK_VERSION(3,0,0)
+
+// -----------------------------------------------------------------------------
+// The ::composited-changed signal is emitted when the composited status of
+// widget s screen changes. See gdk_screen_is_composited().
+// -----------------------------------------------------------------------------
+void cgui::on_composited_changed(GtkWidget* pWidget, gpointer userData)
+{
+	if( gRun.appStop )
+		return;
+
+	DEBUGLOGB;
+
+//	gRun.composed = gdk_screen_is_composited(gtk_widget_get_screen(pWidget)) == TRUE;
+	gRun.composed = gtk_widget_is_composited(pWidget) == TRUE;
+
+	DEBUGLOGP("window screen %s composited\n", gRun.composed ? "is" : "is NOT");
+
+	if( !gRun.appStart && !gRun.updating )
+	{
+		// TODO: don't really need to do everything that this func does
+		//       just need to make the necessary adjustments in a worker thread
+
+		DEBUGLOGS("calling update_wnd_dim async");
+//		update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, true);
+//		update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, gCfg.clockW, gCfg.clockH, true);
+//		update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, gCfg.clockW, gCfg.clockH, false, false);
+		update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, gCfg.clockW, gCfg.clockH, true,  false);
+//		update_wnd_dim(pWidget, gCfg.clockW, gCfg.clockH, false);
+	}
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+// The ::configure-event signal is emitted when the size, position or stacking
+// of the widget's window has changed.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpointer userData)
+{
+	if( gRun.appStop )
+		return FALSE;
+
+	DEBUGLOGB;
+
+	Config     tcfg;
+	GtkWidget* pWindow = pWidget;
+	gint       newX    = pEvent->x;
+	gint       newY    = pEvent->y;
+	gint       newW    = pEvent->width;
+	gint       newH    = pEvent->height;
+
 #ifdef DEBUGLOG
-	gint                                          oldX,  oldY;
-	gint                                          oldW,  oldH;
-	gtk_window_get_position(GTK_WINDOW(pWidget), &oldX, &oldY);
-	gtk_window_get_size    (GTK_WINDOW(pWidget), &oldW, &oldH);
+	{
+		gint                                              oldX,  oldY;
+		gint                                              oldW,  oldH;
+		gtk_window_get_position(GTK_WINDOW(pWindow),     &oldX, &oldY);
+		gtk_window_get_size    (GTK_WINDOW(pWindow),     &oldW, &oldH);
+		DEBUGLOGP("oldX=%d, oldY=%d, oldW=%d, oldH=%d\n", oldX,  oldY, oldW, oldH);
+	}
+#endif
 
-	DEBUGLOGP("oldX=%d, oldY=%d, oldW=%d, oldH=%d\n", oldX, oldY, oldW, oldH);
-#endif*/
+	bool newPos  = newX != gCfg.clockX ||  newY   != gCfg.clockY;
+	bool newSize = newW != gCfg.clockW ||  newH   != gCfg.clockH;
+	bool chgGUI  = lgui::okayGUI()     && (newPos || newSize) && !prefs::opend();
 
 	DEBUGLOGP("newX=%d, newY=%d, newW=%d, newH=%d\n", newX, newY, newW, newH);
-
-	bool newPos  = newX != gCfg.clockX  || newY != gCfg.clockY;
-	bool newSize = newW != gCfg.clockW  || newH != gCfg.clockH;
-	bool chgGUI  = pGladeXml && (newPos || newSize);
+	DEBUGLOGP("newPos=%s, newSize=%s\n",              newPos ? "yes" : "no", newSize ? "yes" : "no");
 
 	if( newSize )
 	{
-		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
-		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
+		if( g_wndSizein )
+		{
+			gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
+			gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
+		}
 	}
+
+	if( g_wndSizein )
+		draw::render_set(pWindow);
 
 	if( chgGUI )
 	{
@@ -866,29 +1119,37 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 	if( newPos )
 	{
 #ifdef  DEBUGLOG
-		static int n = 0;
-		DEBUGLOGP("position change # %d: newX=%d, newY=%d\n", ++n, newX, newY);
-
-/*		static int      n  =   0;
-		static GTimeVal bt = { 0, 0 }, ct = { 0, 0 };
-
-		g_get_current_time(&ct);
-
-		guint32  et = gtk_get_current_event_time();
-		gboolean pg = gdk_pointer_is_grabbed();
-
-		DEBUGLOGP("position change # %d (%d, %d, %d.%d, %d.%d)\n", ++n, (int)pg, (int)et, (int)ct.tv_sec, (int)ct.tv_usec, (int)bt.tv_sec, (int)bt.tv_usec);
-		bt = ct;*/
+		{
+			static int n = 0;
+			DEBUGLOGP("position change # %d: newX=%d, newY=%d\n", ++n, newX, newY);
+		}
 #endif
+#ifdef  DEBUGLOG
+		{
+			static int      n  =   0;
+			static GTimeVal bt = { 0, 0 }, ct = { 0, 0 };
+
+			g_get_current_time(&ct);
+
+			guint32  et = gtk_get_current_event_time();
+			gboolean pg = gdk_pointer_is_grabbed();
+
+			DEBUGLOGP("position change # %d (%d, %d, %d.%d, %d.%d)\n", ++n, (int)pg, (int)et, (int)ct.tv_sec, (int)ct.tv_usec, (int)bt.tv_sec, (int)bt.tv_usec);
+			bt = ct;
+		}
+#endif
+		DEBUGLOGP("new pos: old(%d %d), new(%d %d)\n", gCfg.clockX, gCfg.clockY, newX, newY);
+
 		gCfg.clockX = newX;
 		gCfg.clockY = newY;
 
 		if( chgGUI )
 		{
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonX") )
+			GtkWidget* pWidget;
+			if( pWidget = lgui::pWidget("spinbuttonX") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockX);
 
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonY") )
+			if( pWidget = lgui::pWidget("spinbuttonY") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockY);
 		}
 	}
@@ -896,25 +1157,25 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 	if( newSize )
 	{
 #ifdef  DEBUGLOG
-		static int n = 0;
-		DEBUGLOGP("size change # %d: newW=%d, newH=%d\n", ++n, newW, newH);
+		{
+			static int n = 0;
+			DEBUGLOGP("size change # %d: newW=%d, newH=%d\n", ++n, newW, newH);
+		}
 #endif
-//		gRun.drawScaleX = (double)newW/(double)gCfg.clockW;
-//		gRun.drawScaleY = (double)newH/(double)gCfg.clockH;
-
-		DEBUGLOGP("new sz: old(%d %d), new(%d %d), scl(%f %f)\n",
-			gCfg.clockW, gCfg.clockH, newW, newH, gRun.drawScaleX, gRun.drawScaleY);
+		DEBUGLOGP("new dim: old(%d %d), new(%d %d), scl(%f %f)\n", gCfg.clockW, gCfg.clockH, newW, newH, gRun.drawScaleX, gRun.drawScaleY);
 
 		if( chgGUI )
 		{
-			prefs::open(true);
-
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonWidth") )
+			GtkWidget* pWidget;
+			if( pWidget = lgui::pWidget("spinbuttonWidth") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockW);
 
-			if( pWidget = glade_xml_get_widget(pGladeXml, "spinbuttonHeight") )
+			if( pWidget = lgui::pWidget("spinbuttonHeight") )
 				gtk_spin_button_set_value(GTK_SPIN_BUTTON(pWidget), tcfg.clockH);
 		}
+
+		DEBUGLOGS("issuing a redraw request");
+		gtk_widget_queue_draw(pWindow);
 	}
 
 	if( chgGUI )
@@ -924,100 +1185,99 @@ gboolean gui::on_configure(GtkWidget* pWidget, GdkEventConfigure* pEvent, gpoint
 	return FALSE;
 }
 
+#if 0
 // -----------------------------------------------------------------------------
-gint gui::on_delete(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+// The ::damage-event signal is emitted when a redirected window belonging to
+// widget gets drawn into. The region/area members of the event shows what area
+// of the redirected drawable was drawn into.
+// -----------------------------------------------------------------------------
+#if !GTK_CHECK_VERSION(3,0,0)
+gboolean cgui::on_damage(GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData)
 {
-	DEBUGLOGS("entry-exit");
-	stopApp();
-	return TRUE;
+	DEBUGLOGBF;
+	gboolean ret = on_expose(pWidget, pExpose, userData);
+	DEBUGLOGEF;
+	return   ret;
+}
+#endif
+#endif
+
+// -----------------------------------------------------------------------------
+void cgui::on_date_activate(GtkMenuItem* pMenuItem, gpointer data)
+{
+	DEBUGLOGB;
+
+	GtkWidget* pDialog = popup_activate('d', "date", "windowDate");
+
+	if( pDialog )
+	{
+		GtkCalendar* pDate = (GtkCalendar*)lgui::pWidget("calendar1");
+
+		if( pDate )
+		{
+			gtk_calendar_select_month(pDate, gRun.timeCtm.tm_mon, gRun.timeCtm.tm_year+1900);
+			gtk_calendar_select_day  (pDate, gRun.timeCtm.tm_mday);
+		}
+
+		g_signal_connect(G_OBJECT(pDialog), "delete_event", G_CALLBACK(on_popup_close), NULL);
+		setPopup(pDialog, true, 'd');
+	}
+
+	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-void gui::on_destroy(GtkWidget* pWidget, gpointer userData)
+gboolean cgui::on_delete(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
 {
-	DEBUGLOGS("entry-exit");
+	DEBUGLOGB;
 	stopApp();
+	DEBUGLOGE;
+	return FALSE;
+}
+
+// -----------------------------------------------------------------------------
+gboolean cgui::on_destroy(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+{
+	DEBUGLOGB;
+	stopApp();
+	DEBUGLOGE;
+	return FALSE;
 }
 
 #ifdef _ENABLE_DND
 // -----------------------------------------------------------------------------
-void gui::on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gint x, gint y, GtkSelectionData* pSelData, guint info, guint _time, gpointer userData)
+void cgui::on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gint x, gint y, GtkSelectionData* pSelData, guint info, guint _time, gpointer userData)
 {
 	DEBUGLOGB;
 
-	bool         update = false;
-	const gchar* name   = gtk_widget_get_name(pWidget);
+//	bool update = false;
 
-	DEBUGLOGP("widget name is %s\n", name);
+	DEBUGLOGP("widget name is %s\n", gtk_widget_get_name(pWidget));
 
 	if( gdk_drag_context_get_suggested_action(pContext) == GDK_ACTION_COPY &&
 		pSelData && gtk_selection_data_get_length(pSelData) > 0 &&
 		info == TGT_SEL_STR )
 	{
-		gchar* strs = (gchar*)gtk_selection_data_get_data(pSelData);
+		char* strs = (char*)gtk_selection_data_get_data(pSelData);
 
 		if( strs )
 		{
 			DEBUGLOGP("string received is\n*****\n%s\n*****\n", strs);
 
-			gchar*  eol = strs;
+			char*   eol = strs;
 			while( (eol = strchr(eol, '\n')) && *eol )
 			{
 				*eol = '\0';
 				 eol++;
 			}
 
-			gchar* curs =   strs;
+			char*  curs =   strs;
 			while( curs && *curs )
 			{
-				int    snxt = strlen(curs) + 1;
-				gchar* path = g_filename_from_uri(curs, NULL, NULL);
-				if(   !path ) break;
-
-				g_strstrip(path);
-
-				int plen = strlen(path);
-				if( plen > 1 )
-				{
-					DEBUGLOGP("path received is\n*%s*\n", path);
-
-					char tpath[PATH_MAX]; *tpath = '\0';
-					char tname[64];       *tname = '\0';
-
-					if( loadTheme(path, tpath, vectsz(tpath), tname, vectsz(tname)) )
-					{
-						DEBUGLOGP("path received successfully extracted to\n*%s%s*\n", tpath, tname);
-
-						GString* pP = g_string_new(tpath);
-						GString* pN = g_string_new(tname);
-
-						DEBUGLOGP("current theme to use is\n*%s%s*\n", gCfg.themePath, gCfg.themeFile);
-
-						update = true;
-						gRun.updateSurfs = true;
-
-						ThemeEntry    te = { pP, pN };
-						change_theme(&te,  pWidget);
-
-						g_string_free(pP,  TRUE);
-						g_string_free(pN,  TRUE);
-					}
-					else
-					{
-						DEBUGLOGS("path received not extracted");
-					}
-
-					if( tpath[0] && false )
-						g_del_dir(tpath);
-
-					break; // only one dropped theme imported for now
-				}
-
-				DEBUGLOGP("slen=%d, plen=%d, curs+snxt is\n*****\n%s\n*****\n", snxt, plen, curs+snxt);
-
+				int snxt = strlen(curs) + 1;
+				theme_import(pWidget, curs);
 				curs += snxt;
-
-				g_free(path);
+				break; // only one dropped theme imported for now
 			}
 		}
 		else
@@ -1029,198 +1289,205 @@ void gui::on_drag_data_received(GtkWidget* pWidget, GdkDragContext* pContext, gi
 	gtk_drag_finish(pContext, TRUE, FALSE, _time);
 
 	// TODO: need func to just add new theme above instead of rebuild here
-
-/*	if( update )
+#if 0
+	if( update )
 	{
 		// TODO: anything to do here now that a global theme list is no longer kept?
-	}*/
-
+	}
+#endif
 	DEBUGLOGE;
 }
 #endif // _ENABLE_DND
 
+#if GTK_CHECK_VERSION(3,0,0)
 // -----------------------------------------------------------------------------
-gboolean gui::on_enter_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData)
+gboolean cgui::on_draw(GtkWidget* pWidget, cairo_t* cr, gpointer userData)
 {
+	if( gRun.appStop )
+		return FALSE;
+
 	DEBUGLOGB;
 
-	gdk_window_set_opacity(gRun.pMainWindow->window, 1.0);
-//	wndMoveExit(pWidget);
+	draw::render(cr);
 
 	DEBUGLOGE;
 	return FALSE;
 }
+#endif
+
+// -----------------------------------------------------------------------------
+// The ::enter-notify-event is emitted when the pointer enters the widget's
+// window.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_enter_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData)
+{
+	if( gRun.appStop )
+		return FALSE;
+
+	DEBUGLOGB;
+
+	gdk_window_set_opacity(gtk_widget_get_window(gRun.pMainWindow), 1.0);
+//	wndMoveExit(pWidget);
+	gRun.isMousing = true;
+
+	if( gCfg.showTTips )
+		update_ts_text(true);
+
+	DEBUGLOGE;
+	return FALSE;
+}
+
+#if 0
+// -----------------------------------------------------------------------------
+gboolean cgui::on_event(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+{
+	DEBUGLOGE;
+	return FALSE;
+}
+#endif
 
 // -----------------------------------------------------------------------------
 // The ::expose-event signal is emitted when an area of a previously obscured
 // GdkWindow is made visible and needs to be redrawn.
 // -----------------------------------------------------------------------------
-gboolean gui::on_expose(GtkWidget* pWidget, GdkEventExpose* pExpose)
-{
-/*	DEBUGLOGB;
-	DEBUGLOGP("entry - %d upcoming exposes\n", pExpose->count);
-
-#ifdef  DEBUGLOG
-	static int ct = 0;
-//	if( ct < 10 ) DEBUGLOGP("rendering(%d)\n", ++ct);
-	DEBUGLOGP("rendering(%d)\n", ++ct);
+#if GTK_CHECK_VERSION(3,0,0)
+gboolean cgui::on_damage(GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData)
+#else
+gboolean cgui::on_expose(GtkWidget* pWidget, GdkEventExpose* pExpose, gpointer userData)
 #endif
-*/
-	draw::render(pWidget, gRun.drawScaleX, gRun.drawScaleY, gRun.renderIt, gRun.appStart, gCfg.clockW, gCfg.clockH, gRun.appStart);
-
-/*	DEBUGLOGE;*/
-	return FALSE;
-}
-
-// -----------------------------------------------------------------------------
-gboolean gui::on_focus_in(GtkWidget* pWidget)
 {
+	if( gRun.appStop )
+		return FALSE;
+#if 0
+	{
+		// the first call is always for a bogus window position and size
+		// apparently it's for the "system's" (window manager's?) defaults
+		// these values cause issues later on during the startup, namely,
+		// there's a 'flash' of something being displayed instead of a solid
+		// clock displayed at the correct position and size - so we punt it
+
+		static bool
+			first = true;
+		if( first )
+		{
+			first = false;
+			return  FALSE;
+		}
+	}
+#endif
+	DEBUGLOGB;
+//	DEBUGLOGP(  %d upcoming exposes\n", pExpose->count);
+
+//#ifdef DEBUGLOG
+	{
+		static int ct = 0;
+//		if( ct < 10 ) DEBUGLOGP("rendering(%d)\n", ++ct);
+		DEBUGLOGP("rendering(%d)\n", ++ct);
+	}
+//#endif
+
+#ifdef DEBUGLOG
+	{
+		gint                                              wndX,  wndY;
+		gint                                              wndW,  wndH;
+		gtk_window_get_position(GTK_WINDOW(pWidget),     &wndX, &wndY);
+		gtk_window_get_size    (GTK_WINDOW(pWidget),     &wndW, &wndH);
+		DEBUGLOGP("wndX=%d, wndY=%d, wndW=%d, wndH=%d\n", wndX,  wndY, wndW, wndH);
+	}
+#endif
+
+//	DEBUGLOGZ("bef calling draw::render", 5000);
+
+//	NOTE: from gdk_cairo_create ref doc:
+//		Note that due to double-buffering, Cairo contexts created in a GTK+ expose
+//		event handler cannot be cached and reused between different expose events.
+
+#if 0
+	if( gRun.appStart )
+	{
+//		draw::render(pWidget);
+//		draw::clear(pWidget);
+		DEBUGLOGR(1);
+		return TRUE;
+	}
+	else
+#endif
+//	{
+//		draw::render_set(pWidget); // can't do - see above note
+		draw::render(pWidget);
+//	}
+
+//	DEBUGLOGZ("aft calling draw::render", 5000);
+
+	DEBUGLOGE;
+//	return FALSE;
+	return TRUE;
+}
+#if 0
+// -----------------------------------------------------------------------------
+// The ::focus-in-event signal is emitted when the keyboard focus enters the
+// widget's window.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_focus_in(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+{
+	if( gRun.appStop )
+		return FALSE;
+
 	DEBUGLOGB;
 
-	// focus-in is not fired on on all dms/wms/gtklibs/gdklibs/xlibs/who-knows
+	// focus-in is not fired off on all dms/wms/gtklibs/gdklibs/xlibs/who-knows
+	// seems to work for xfce's dm/wm
+
+	// can't remember why this is needed anyway, so disabled for now
 
 //	wndMoveExit(pWidget);
 
 	DEBUGLOGE;
 	return FALSE;
 }
-
+#endif
 // -----------------------------------------------------------------------------
-void gui::on_alarm_activate(GtkMenuItem* pMenuItem, gpointer userData)
+void cgui::on_help_activate(GtkMenuItem* pMenuItem, gpointer userData)
 {
-	GtkWidget* pDlgBox =
-		gtk_message_dialog_new((GtkWindow*)userData,
-			GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-			"No alarm settings/usage available yet.\n\nSorry.");
+	DEBUGLOGB;
 
-	if( pDlgBox )
-	{
-		gtk_window_set_transient_for(GTK_WINDOW(pDlgBox), (GtkWindow*)userData);
-		gtk_window_set_position(GTK_WINDOW(pDlgBox), GTK_WIN_POS_CENTER);
-		gtk_window_set_title(GTK_WINDOW(pDlgBox), gRun.appName);
-		gtk_dialog_run(GTK_DIALOG(pDlgBox));
-		on_popup_close(GTK_DIALOG(pDlgBox), userData);
-		gtk_widget_destroy(pDlgBox);
-	}
-}
-
-// -----------------------------------------------------------------------------
-static void on_chart_realize(GtkWidget* pWidget, gpointer data)
-{
-	GtkWidget* pChart = glade_xml_get_widget(gui::g_pGladeXml, "drawingareaCurve");
-	chart_init(pChart);
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_chart_activate(GtkMenuItem* pMenuItem, gpointer data)
-{
-	GtkWidget* pDialog = popup_activate('c', "chart", "windowCurve");
+	GtkWidget* pDialog = popup_activate('h', "help", "helpDialog");
 
 	if( pDialog )
 	{
-		set_window_icon(pDialog);
-
-		g_signal_connect(G_OBJECT(pDialog), "delete_event", G_CALLBACK(on_popup_close),   NULL);
-		g_signal_connect(G_OBJECT(pDialog), "realize",      G_CALLBACK(on_chart_realize), NULL);
-
-		gtk_widget_show_all(pDialog);
-
-		g_pPopupDlg = GTK_WINDOW(pDialog);
-		g_inPopup   = true;
-		g_nmPopup   = 'c';
-	}
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_chime_activate(GtkMenuItem* pMenuItem, gpointer userData)
-{
-	GtkWidget* pDlgBox =
-		gtk_message_dialog_new((GtkWindow*)userData,
-			GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-			"No chime settings/usage available yet.\n\nSorry.");
-
-	if( pDlgBox )
-	{
-		gtk_window_set_transient_for(GTK_WINDOW(pDlgBox), (GtkWindow*)userData);
-		gtk_window_set_position(GTK_WINDOW(pDlgBox), GTK_WIN_POS_CENTER);
-		gtk_window_set_title(GTK_WINDOW(pDlgBox), gRun.appName);
-		gtk_dialog_run(GTK_DIALOG(pDlgBox));
-		on_popup_close(GTK_DIALOG(pDlgBox), userData);
-		gtk_widget_destroy(pDlgBox);
-	}
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_date_activate(GtkMenuItem* pMenuItem, gpointer data)
-{
-	GtkWidget* pDialog = popup_activate('d', "date", "windowDate");
-
-	if( pDialog )
-	{
-		set_window_icon(pDialog);
-
-		GtkCalendar* pDate = (GtkCalendar*)glade_xml_get_widget(gui::g_pGladeXml, "calendar1");
-
-		gtk_calendar_select_month(pDate, gRun.timeCtm.tm_mon, gRun.timeCtm.tm_year+1900);
-		gtk_calendar_select_day  (pDate, gRun.timeCtm.tm_mday);
-
-		g_signal_connect(G_OBJECT(pDialog), "delete_event", G_CALLBACK(on_popup_close), NULL);
-
-		gtk_widget_show_all(pDialog);
-
-		g_pPopupDlg = GTK_WINDOW(pDialog);
-		g_inPopup   = true;
-		g_nmPopup   = 'd';
-	}
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_help_activate(GtkMenuItem* pMenuItem, gpointer userData)
-{
-	GtkWidget* pDlgBox =
-		gtk_message_dialog_new((GtkWindow*)userData,
-			GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-			"No help available yet, other than through the command line via -? or --help.\n\nSorry.");
-
-	if( pDlgBox )
-	{
-		gtk_window_set_transient_for(GTK_WINDOW(pDlgBox), (GtkWindow*)userData);
-		gtk_window_set_position(GTK_WINDOW(pDlgBox), GTK_WIN_POS_CENTER);
-		gtk_window_set_title(GTK_WINDOW(pDlgBox), gRun.appName);
-		gtk_dialog_run(GTK_DIALOG(pDlgBox));
-		on_popup_close(GTK_DIALOG(pDlgBox), userData);
-		gtk_widget_destroy(pDlgBox);
-	}
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_info_activate(GtkMenuItem* pMenuItem, gpointer userData)
-{
-	GtkWidget* pDialog = popup_activate('a', "info", "infoDialog");
-
-	if( pDialog )
-	{
-		set_window_icon(pDialog);
-
-		gtk_about_dialog_set_version (GTK_ABOUT_DIALOG(pDialog), gRun.appVersion);
-//		gtk_window_set_icon_from_file(GTK_WINDOW      (pDialog), get_icon_filename(), NULL);
-//		gtk_about_dialog_set_logo    (GTK_ABOUT_DIALOG(pDialog), gdk_pixbuf_new_from_file(get_logo_filename(), &pError));
-		gtk_about_dialog_set_logo    (GTK_ABOUT_DIALOG(pDialog), gdk_pixbuf_new_from_file(get_logo_filename(), NULL));
-
 		g_signal_connect(G_OBJECT(pDialog), "response", G_CALLBACK(on_popup_close), NULL);
-
-		gtk_widget_show(pDialog);
-
-		g_pPopupDlg = GTK_WINDOW(pDialog);
-		g_inPopup   = true;
-		g_nmPopup   = 'a';
+		hgui::init(pDialog, 'h');
 	}
+
+	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userData)
+void cgui::on_info_activate(GtkMenuItem* pMenuItem, gpointer userData)
 {
-	DEBUGLOGP("entry - keyval is %d\n", (int)pKey->keyval);
+	DEBUGLOGB;
+
+	GtkWidget* pDialog = popup_activate('i', "info", "infoDialog");
+
+	if( pDialog )
+	{
+		g_signal_connect(G_OBJECT(pDialog), "response", G_CALLBACK(on_popup_close), NULL);
+		igui::init(pDialog, 'i');
+	}
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+// The ::key-press-event signal is emitted when a key is pressed.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userData)
+{
+	if( gRun.appStop )
+		return FALSE;
+
+	DEBUGLOGB;
+	DEBUGLOGP("  keyval is %d\n", (int)pKey->keyval);
 
 	if( pKey->type == GDK_KEY_PRESS )
 	{
@@ -1230,39 +1497,94 @@ gboolean gui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userD
 			return FALSE;
 		}
 
-		if( gRun.maximize && (pKey->keyval == 'q' || pKey->keyval == 'Q') )
+		bool altd  = (pKey->state & GDK_MOD1_MASK)    == GDK_MOD1_MASK;
+		bool ctrld = (pKey->state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK;
+		bool shftd = (pKey->state & GDK_SHIFT_MASK)   == GDK_SHIFT_MASK;
+
+		switch( pKey->keyval )
 		{
-			pKey->keyval  =  'm';
+		case HOTKEY_QUIT1:
+//		case HOTKEY_QUIT2:
+			if( gRun.maximize )
+				pKey->keyval = HOTKEY_MAXIMIZE;
 		}
 
 		switch( pKey->keyval )
 		{
-		case GDK_Escape:
-		case 'q':
-		case 'Q': stopApp();
-				  break;
+		case GDK_KEY_Escape:
+		case HOTKEY_QUIT1:
+//		case HOTKEY_QUIT2:
+			stopApp();
+			break;
 
-		case GDK_Menu: on_prefs_activate(NULL, NULL);
-					   break;
+		case GDK_KEY_Menu:
+			on_prefs_activate(NULL, gRun.pMainWindow);
+			break;
+
+		case GDK_KEY_Up:
+		case GDK_KEY_Down:
+		case GDK_KEY_Left:
+		case GDK_KEY_Right:
+			if( ctrld )
+			{
+				GdkEventScroll es;
+				bool keyu    = pKey->keyval == GDK_KEY_Up;
+				bool keyd    = pKey->keyval == GDK_KEY_Down;
+				bool keyl    = pKey->keyval == GDK_KEY_Left;
+				bool keyr    = pKey->keyval == GDK_KEY_Right;
+				es.state     = pKey->state;
+				es.direction = keyu ? GDK_SCROLL_UP : (keyd ? GDK_SCROLL_DOWN : (keyl ? GDK_SCROLL_LEFT : GDK_SCROLL_RIGHT));
+				DEBUGLOGS("ctrl+up/down arrow key input - calling on_wheel_scroll");
+				on_wheel_scroll(pWidget, &es, NULL);
+			}
+			break;
 
 		// settings based functionality - TODO: should these be 'cfg-saved'?
 
-		case '2': gCfg.show24Hrs = true;
-				  prefs::on_24h_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_HELP:
+			// TODO: add in logic to popup main help dbox
+			break;
 
-		case '4': gCfg.show24Hrs = false;
-				  prefs::on_24h_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_TWELVE:
+			if( gCfg.show24Hrs == true )
+			{
+				prefs::on_24_hour_toggled(NULL, pWidget);
+				prefs::ToggleBtnSet(prefs::PREFSTR_24HOUR, gCfg.show24Hrs);
+			}
+			break;
 
-		case 'b': prefs::on_show_in_taskbar_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_TWENTYFOUR:
+			if( gCfg.show24Hrs == false )
+			{
+				prefs::on_24_hour_toggled(NULL, pWidget);
+				prefs::ToggleBtnSet(prefs::PREFSTR_24HOUR, gCfg.show24Hrs);
+			}
+			break;
 
-		case 'B': prefs::on_keep_on_bot_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_ALARMS:
+			gCfg.showAlarms = !gCfg.showAlarms;
+			gtk_widget_queue_draw(pWidget);
+			draw::render_set();
+			break;
 
-		case 'c':
-		case 'C':
+		case HOTKEY_ABOVEALL:
+			prefs::on_keep_on_top_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_KEEPONBOT, gCfg.keepOnBot);
+			prefs::ToggleBtnSet(prefs::PREFSTR_KEEPONTOP, gCfg.keepOnTop);
+			break;
+
+		case HOTKEY_TASKBAR:
+			prefs::on_show_in_taskbar_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_SHOWINTASKS, gCfg.showInTasks);
+			break;
+
+		case HOTKEY_BELOWALL:
+			prefs::on_keep_on_bot_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_KEEPONBOT, gCfg.keepOnBot);
+			prefs::ToggleBtnSet(prefs::PREFSTR_KEEPONTOP, gCfg.keepOnTop);
+			break;
+
+		case HOTKEY_CENTER:
 			if( gCfg.clockX != 0 || gCfg.clockY != 0 || gCfg.clockC != CORNER_CENTER )
 			{
 				gCfg.clockX  = 0;
@@ -1274,93 +1596,229 @@ gboolean gui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userD
 			}
 			break;
 
-		case 'd':
-		case 'D': prefs::on_show_date_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_DATE:
+			prefs::on_show_date_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_SHOWDATE, gCfg.showDate);
+			break;
 
-		case 'e':
-//		case 'E':
-		case 'E': gRun.evalDraws = !gRun.evalDraws; // TODO: turning this on now crashes the app (fix in draw)
-//				  // TODO: for composited testing, otherwise leave commented out
-//				  gdk_window_set_composited(pWidget->window, gRun.evalDraws ? FALSE : TRUE);
-//				  on_composited_changed(pWidget, NULL);
-				  gtk_widget_queue_draw(pWidget);
-				  break;
+		case HOTKEY_EVALDRAWS:
+			gRun.evalDraws = !gRun.evalDraws;
+			gtk_widget_queue_draw(pWidget);
+			draw::update_date_surf();
+			draw::render_set();
+			break;
 
-		case 'f':
-		case 'F': prefs::on_face_date_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_FACEDATE:
+			prefs::on_face_date_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_FACEDATE, gCfg.faceDate);
+			break;
 
-		case 'i':
-		case 'I': prefs::on_sticky_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_FOCUS:
+			gCfg.takeFocus = !gCfg.takeFocus;
+			gtk_widget_set_can_focus(pWidget, gCfg.takeFocus ? FALSE : TRUE);
+			gtk_window_set_accept_focus(GTK_WINDOW(pWidget), gCfg.takeFocus ? FALSE : TRUE);
+			break;
 
-		case 'k': gRun.clickthru = !gRun.clickthru;
-				  update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, false, true, false);
-				  gtk_widget_queue_draw(pWidget);
-				  break;
-
-		case 'K': gRun.nodisplay = !gRun.nodisplay;
-				  update_input_shape(pWidget, gCfg.clockW, gCfg.clockH, false, true, false);
-				  gtk_widget_queue_draw(pWidget);
-				  break;
-
-		case 'm':
-		case 'M':
-			int cx, cy, cw, ch;
-
-			if( gRun.maximize = !gRun.maximize )
+		case HOTKEY_SCRNGRAB1: // app-generated svg 'icon' with all clock components drawn as should be seen on-screen
+		case HOTKEY_SCRNGRAB2: // typical system-generated window 'grab' (png sized to window - includes desktop bits)
 			{
-				gRun.prevWinX =  gCfg.clockX;
-				gRun.prevWinY =  gCfg.clockY;
-				gRun.prevWinW =  gCfg.clockW;
-				gRun.prevWinH =  gCfg.clockH;
+//				TODO: start a new thread then draw
+//				TODO: add system-generated grab support for 'g' usage
 
-				int  sw       =  gdk_screen_get_width (gdk_screen_get_default());
-				int  sh       =  gdk_screen_get_height(gdk_screen_get_default());
+				const char* ppath = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
 
-				cx = sw/2-gCfg.clockW/2; cy = sh/2-gCfg.clockH/2;
-				cw = sw; ch = sh;
+				if( ppath )
+				{
+					char    fpath[PATH_MAX];
+					strvcpy(fpath, ppath);
+					strvcat(fpath, "/" APP_NAME "-grab.svg");
+					DEBUGLOGP("grab path is:\n%s\n", fpath);
+					draw::make_icon(fpath, true);
+				}
+			}
+			break;
+
+		case HOTKEY_HANDSONLY:
+//			prefs::on_hands_only_toggled(NULL, pWidget);
+//			prefs::ToggleBtnSet(prefs::PREFSTR_HANDSONLY, gCfg.handsOnly);
+			gCfg.handsOnly  = !gCfg.handsOnly;
+			// TODO: these need to be temp chgs and not cfg saved
+			//       toggling also only works for those hands that
+			//       aren't using their own draw surf to begin with
+			gCfg.useSurf[0] = !gCfg.useSurf[0];
+			gCfg.useSurf[1] = !gCfg.useSurf[1];
+//			gCfg.useSurf[2] = !gCfg.useSurf[2];
+			gtk_widget_queue_draw(pWidget);
+			draw::update_bkgnd();
+			draw::render_set();
+			break;
+
+		case HOTKEY_STICKY:
+			prefs::on_sticky_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_STICKY, copts::sticky());
+			break;
+
+		case HOTKEY_CLICKTHRU:
+			gCfg.clickThru = !gCfg.clickThru;
+			update_shapes(pWidget, gCfg.clockW, gCfg.clockH, false, true, false);
+			gtk_widget_queue_draw(pWidget);
+			draw::render_set();
+			break;
+
+		case HOTKEY_NODISPLAY:
+			gCfg.noDisplay = !gCfg.noDisplay;
+			update_shapes(pWidget, gCfg.clockW, gCfg.clockH, false, true, false);
+			change_ani_rate(pWidget, gCfg.renderRate, true, false);
+			gtk_widget_queue_draw(pWidget);
+			draw::render_set();
+			break;
+
+		case HOTKEY_MINIMIZE:
+			if( gCfg.showInPager && gCfg.showInTasks )
+			{
+				if( gRun.minimize = !gRun.minimize )
+					gtk_window_iconify  (GTK_WINDOW(pWidget));
+				else
+					gtk_window_deiconify(GTK_WINDOW(pWidget));
+			}
+			break;
+
+		case HOTKEY_MAXIMIZE:
+			{
+			int        cx,  cy, cw, ch, ow, oh;
+			GdkScreen* pScreen =  gtk_window_get_screen(GTK_WINDOW(pWidget));
+			int        sw      =  gdk_screen_get_width (pScreen);
+			int        sh      =  gdk_screen_get_height(pScreen);
+
+			if( gRun.maximize  = !gRun.maximize )
+			{
+				gRun.prevWinX  =  gCfg.clockX;
+				gRun.prevWinY  =  gCfg.clockY;
+				gRun.prevWinW  =  gCfg.clockW;
+				gRun.prevWinH  =  gCfg.clockH;
+
+				ow = gCfg.clockW; oh = gCfg.clockH;
+				cx = sw/2 - ow/2; cy = sh/2 - oh/2;
+				cw = sw;          ch = sh;
 
 				gtk_window_maximize(GTK_WINDOW(pWidget));
 			}
 			else
 			{
+				ow = sw;            oh = sh;
 				cx = gRun.prevWinX; cy = gRun.prevWinY;
 				cw = gRun.prevWinW; ch = gRun.prevWinH;
 
 				gtk_window_unmaximize(GTK_WINDOW(pWidget));
 			}
 
-			// TODO: only shows correctly after switching to another workspace
+			// TODO: only shows correctly after a workspace switch - still?
 
 			update_wnd_pos(pWidget, cx, cy);
-			update_wnd_dim(pWidget, cw, ch, true);
-
+//			update_wnd_dim(pWidget, cw, ch, true);
+			update_wnd_dim(pWidget, cw, ch, ow, oh, true);
+			}
 			break;
 
-		case 'o':
-		case 'O': prefs::on_keep_on_top_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_OPACITYDN:
+			if( gCfg.opacity > 0.0 )
+				gdk_window_set_opacity(gtk_widget_get_window(pWidget), gCfg.opacity-=0.02);
+			break;
 
-		case 'p':
-		case 'P': prefs::on_show_in_pager_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_OPACITYUP:
+			if( gCfg.opacity < 1.0 )
+				gdk_window_set_opacity(gtk_widget_get_window(pWidget), gCfg.opacity+=0.02);
+			break;
 
-		case 'r': change_ani_rate(pWidget, gCfg.refreshRate-1, false, true);
-				  break;
-		case 'R': change_ani_rate(pWidget, gCfg.refreshRate+1, false, true);
-				  break;
+		case HOTKEY_PAGER:
+			prefs::on_show_in_pager_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_SHOWINPAGER, gCfg.showInPager);
+			break;
 
-		case 's':
-		case 'S': prefs::on_seconds_toggled(NULL, pWidget);
-				  break;
+		case HOTKEY_DRAWQUEUED:
+			gCfg.queuedDraw = !gCfg.queuedDraw;
+			change_ani_rate(pWidget, gCfg.renderRate,   true,  true);
+			break;
 
-		case 'T': gRun.textonly = !gRun.textonly;
-				  draw::update_date_surf();
-				  gtk_widget_queue_draw(pWidget);
-				  change_ani_rate(pWidget, gCfg.refreshRate, true, false);
-				  break;
+		case HOTKEY_REFRESHDN:
+			change_ani_rate(pWidget, gCfg.renderRate-1, false, true);
+			break;
+
+		case HOTKEY_REFRESHUP:
+			change_ani_rate(pWidget, gCfg.renderRate+1, false, true);
+			break;
+
+		case HOTKEY_SECONDS:
+			prefs::on_seconds_toggled(NULL, pWidget);
+			prefs::ToggleBtnSet(prefs::PREFSTR_SECONDS, gCfg.showSeconds);
+			break;
+
+		case HOTKEY_SQUAREUP:
+			if( gCfg.clockW != gCfg.clockH )
+			{
+				int ce = gCfg.clockW < gCfg.clockH ? gCfg.clockW : gCfg.clockH; 
+				update_wnd_dim(pWidget, ce, ce, gCfg.clockW, gCfg.clockH, true);
+			}
+			break;
+
+		case HOTKEY_TEXTONLY:
+			if( gCfg.showDate )
+			{
+				DEBUGLOGS("***HOTKEY_TEXTONLY***");
+				// TODO: need to get the prefs calls working and usable
+//				prefs::on_text_only_toggled(NULL, pWidget);
+//				prefs::ToggleBtnSet(prefs::PREFSTR_TEXTONLY, gCfg.textOnly);
+				gCfg.textOnly = !gCfg.textOnly;
+				change_ani_rate(pWidget, gCfg.renderRate, true, false);
+				draw::update_date_surf(false, false, false, true);
+				gtk_widget_queue_draw(pWidget);
+//				draw::update_bkgnd(false);
+//				draw::update_date_surf();
+				draw::render_set();
+			}
+			break;
+
+		case HOTKEY_PASTE:
+			DEBUGLOGS("***HOTKEY_PASTE***");
+			if( ctrld )
+			{
+				DEBUGLOGS("***ctrl+HOTKEY_PASTE***");
+
+				GtkClipboard* pCB = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+
+				if( pCB )
+				{
+					DEBUGLOGS("***selection clipboard available***");
+
+					if( gtk_clipboard_wait_is_uris_available(pCB) )
+					{
+						DEBUGLOGS("***uris available on clipboard***");
+						char** ppURIs = gtk_clipboard_wait_for_uris(pCB);
+
+						if( ppURIs )
+						{
+							DEBUGLOGS("***got uris on clipboard***");
+							int i = 0, n = 8; // n is just an arbitrary failsafe
+
+							while( ppURIs[i] )
+							{
+								DEBUGLOGP("***%s***\n", ppURIs[i]);
+								theme_import(pWidget,   ppURIs[i]);
+								break;
+
+								if( ++i >= n )
+									break;
+							}
+
+							DEBUGLOGS("***freeing array of gotten clipboard uris***");
+							g_strfreev(ppURIs);
+						}
+					}
+
+//					g_object_unref(pCB);
+				}
+			}
+			break;
 		}
 	}
 
@@ -1369,13 +1827,78 @@ gboolean gui::on_key_press(GtkWidget* pWidget, GdkEventKey* pKey, gpointer userD
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_leave_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData)
+// The ::leave-notify-event is emitted when the pointer leaves the widget's
+// window.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_leave_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, gpointer userData)
 {
+	if( gRun.appStop )
+		return FALSE;
+
 	DEBUGLOGB;
 
 	if( !g_wndMovein )
+		gdk_window_set_opacity(gtk_widget_get_window(gRun.pMainWindow), gCfg.opacity);
+
+	gRun.isMousing = false;
+
+	DEBUGLOGE;
+	return FALSE;
+}
+
+// -----------------------------------------------------------------------------
+// The ::map-event signal is emitted when the widget's window is mapped. A
+// window is mapped when it becomes visible on the screen.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_map(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+{
+	if( gRun.appStop )
+		return FALSE;
+
+	DEBUGLOGB;
+
+#if 1
+	static bool first = true;
+
+	if( first )
 	{
-		gdk_window_set_opacity(gRun.pMainWindow->window, gCfg.opacity);
+		first = false;
+
+		DEBUGLOGS("first time called so setting timers & opacity");
+//		int fps = gCfg.showSeconds || gCfg.aniStartup ? 200 : 2;
+		gRun.infoTimerId = g_timeout_add_full(infoPrio, 1000/2,   (GSourceFunc)info_time_timer, (gpointer)pWidget, NULL);
+//		gRun.drawTimerId = g_timeout_add_full(drawPrio, 1000/fps, (GSourceFunc)draw_anim_timer, (gpointer)pWidget, NULL);
+		gRun.drawTimerId = g_timeout_add_full(drawPrio, 1000/200, (GSourceFunc)draw_anim_timer, (gpointer)pWidget, NULL);
+//		gRun.drawTimerId = g_timeout_add_full(drawPrio, 1000/50,  (GSourceFunc)draw_anim_timer, (gpointer)pWidget, NULL);
+//		DEBUGLOGP("render timer set to %d fps (%d ms)\n", fps, 1000/fps);
+		gdk_window_set_opacity(gtk_widget_get_window(pWidget), gCfg.opacity*gRun.animScale);
+
+		initWorkspace(); // TODO: should this be called here now?
+	}
+#endif
+
+	DEBUGLOGP("renderIt was %s\n", gRun.renderIt ? "true" : "false");
+
+//	if( gRun.renderIt == false && !gCfg.sticky && gCfg.clockWS )
+	if( gRun.renderIt == false )
+	{
+		gRun.renderIt =  true;
+		gRun.renderUp = !gRun.appStart;
+
+		DEBUGLOGP("renderIt is now %s\n", gRun.renderIt ? "true" : "false");
+		DEBUGLOGP("renderUp is now %s\n", gRun.renderUp ? "true" : "false");
+
+		if( gRun.scrsaver && !gRun.appStart )
+		{
+			stopApp();
+		}
+		else
+		{
+			DEBUGLOGS("turning on rendering - queueing redraw request");
+			change_ani_rate(pWidget, gCfg.renderRate, true, false);
+			gtk_widget_queue_draw(pWidget);
+			draw::render_set(pWidget);
+		}
 	}
 
 	DEBUGLOGE;
@@ -1383,12 +1906,22 @@ gboolean gui::on_leave_notify(GtkWidget* pWidget, GdkEventCrossing* pCrossing, g
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_motion_notify(GtkWidget* pWidget, GdkEventMotion* pEvent, gpointer userData)
+// The ::motion-notify-event signal is emitted when the pointer moves over the
+// widget's GdkWindow.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_motion_notify(GtkWidget* pWidget, GdkEventMotion* pEvent, gpointer userData)
 {
+	if( gRun.appStop )
+		return FALSE;
+
+	DEBUGLOGB;
+
 	if( gRun.scrsaver && !gRun.appStart )
 	{
 		static double mouseX, mouseY, delmvX, delmvY;
 		static bool  first =  true;
+
+		DEBUGLOGB;
 
 		if( first )
 		{
@@ -1403,55 +1936,35 @@ gboolean gui::on_motion_notify(GtkWidget* pWidget, GdkEventMotion* pEvent, gpoin
 		{
 			stopApp();
 		}
+
+		DEBUGLOGE;
 	}
 
+	DEBUGLOGE;
 	return FALSE;
 }
 
 // -----------------------------------------------------------------------------
-GtkWidget* gui::popup_activate(char type, const char* name, const char* widget)
+gboolean cgui::on_popup_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
 {
 	DEBUGLOGB;
 
-	if( g_inPopup && g_nmPopup == type )
-	{
-		gtk_window_present(g_pPopupDlg);
-		dnit(false);
-		return NULL;
-	}
-
-	if( g_inPopup || !g_pGladeXml ) // should always be available since this is a glade menu item event
-	{
-		dnit(!g_inPopup);
-		return NULL;
-	}
-
-	dnit();
-
-	if( g_pGladeXml == NULL )
-		getGladeXml(name);
-
-	GtkWidget* ret = g_pGladeXml != NULL ? glade_xml_get_widget(g_pGladeXml, widget) : NULL;
+	gtk_widget_hide   (pWidget);
+	gtk_widget_destroy(pWidget);
+	dnit(true, true);
 
 	DEBUGLOGE;
-	return ret;
+	return FALSE;
 }
 
 // -----------------------------------------------------------------------------
-void gui::on_popup_close(GtkDialog* pDialog, gpointer userData)
-{
-	gtk_widget_hide(GTK_WIDGET(pDialog));
-	dnit();
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_popupmenu_done(GtkMenuShell* pMenuShell, gpointer userData)
+void cgui::on_popupmenu_done(GtkMenuShell* pMenuShell, gpointer userData)
 {
 	DEBUGLOGB;
 
 	if( !g_inPopup )
 	{
-		DEBUGLOGS("clearing previously loaded glade context menu");
+		DEBUGLOGS("clearing previously loaded lgui context menu");
 		dnit();
 	}
 
@@ -1460,28 +1973,16 @@ void gui::on_popupmenu_done(GtkMenuShell* pMenuShell, gpointer userData)
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-static void on_custom_anim_activate(GtkExpander* pExpander, gpointer user_data)
-{
-	DEBUGLOGS("entry/exit");
-
-	if( !gtk_expander_get_expanded(pExpander) )
-	{
-		GtkWidget* pChart = glade_xml_get_widget(gui::g_pGladeXml, "drawingareaAnimationCustom");
-		chart_init(pChart);
-	}
-}
-
-// -----------------------------------------------------------------------------
-void gui::on_prefs_activate(GtkMenuItem* pMenuItem, gpointer data)
+void cgui::on_prefs_activate(GtkMenuItem* pMenuItem, gpointer userData)
 {
 	DEBUGLOGB;
-/*
+#if 0
 	https://developer.gnome.org/gio/stable/GSubprocess.html#g-subprocess-new
-	GSubprocess* g_subprocess_new(GSubprocessFlags flags, GError** error, const gchar* argv0, ...);
-*/
+	GSubprocess* g_subprocess_new(GSubprocessFlags flags, GError** error, const char* argv0, ...);
+#endif
 	// TODO: can this use 'popup_activate' function instead of all this? If not, why?
-
-/*	GtkWidget* pDialog = popup_activate('c', "chart", "windowCurve");
+#if 0
+	GtkWidget* pDialog = popup_activate('c', "chart", "windowChart");
 
 	if( pDialog )
 	{
@@ -1495,16 +1996,24 @@ void gui::on_prefs_activate(GtkMenuItem* pMenuItem, gpointer data)
 		g_pPopupDlg = GTK_WINDOW(pDialog);
 		g_inPopup   = true;
 		g_nmPopup   = 'c';
-	}*/
-
+	}
+#endif
 	if( g_inPopup && g_nmPopup == 's' )
 	{
+		DEBUGLOGS("exit(0)");
 		gtk_window_present(g_pPopupDlg);
 		dnit(false);
 		return;
 	}
 
-	if( g_inPopup || !g_pGladeXml ) // should always be available since this is a glade menu item event
+	// lgui should always be available since this is a lgui menu item event
+	// unless called via context menu key use
+
+	bool lguiActv  =   lgui::okayGUI();
+//	bool menuKeyd  =  !lguiActv && !userData && !pMenuItem;
+	bool menuKeyd  =  !lguiActv && !pMenuItem;
+
+	if( g_inPopup || (!lguiActv && !menuKeyd) )
 	{
 		DEBUGLOGS("exit(1)");
 		dnit(!g_inPopup);
@@ -1513,30 +2022,39 @@ void gui::on_prefs_activate(GtkMenuItem* pMenuItem, gpointer data)
 
 	prefs::begin();
 
-	dnit();
+	if( !menuKeyd )
+		dnit();
 
-	if( g_pGladeXml == NULL )
-		getGladeXml("props");
-
-	if( g_pGladeXml )
+	if(!lgui::okayGUI() )
 	{
-/*		GTimeVal            ct;
+		DEBUGLOGS("loading props lgui file");
+		lgui::getXml("props");
+	}
+
+	if( lgui::okayGUI() )
+	{
+		DEBUGLOGS("props lgui file successfully loaded");
+#if 0
+		GTimeVal            ct;
 		g_get_current_time(&ct);
-		DEBUGLOGP("before sync loading of %s (%d.%d)\n", "settingsDialog", (int)ct.tv_sec, (int)ct.tv_usec);*/
-
-		GtkWidget* pDialog = glade_xml_get_widget(g_pGladeXml, "settingsDialog");
-
-/*		g_get_current_time(&ct);
-		DEBUGLOGP("after loading, which %s (%d.%d)\n", pDialog ? "succeeded" : "failed", (int)ct.tv_sec, (int)ct.tv_usec);*/
-
+		DEBUGLOGP("before sync loading of %s (%d.%d)\n", "settingsDialog", (int)ct.tv_sec, (int)ct.tv_usec);
+#endif
+		GtkWidget* pDialog = lgui::pWidget("settingsDialog");
+#if 0
+		g_get_current_time(&ct);
+		DEBUGLOGP("after loading, which %s (%d.%d)\n", pDialog ? "succeeded" : "failed", (int)ct.tv_sec, (int)ct.tv_usec);
+#endif
 		if( pDialog )
 		{
-//			gtk_window_set_icon_from_file(GTK_WINDOW(pDialog), get_icon_filename(), NULL);
-			set_window_icon(pDialog);
-			prefs::init(pDialog, g_pPopupDlg, g_inPopup, g_nmPopup);
+			DEBUGLOGS("settings dbox successfully created");
+//			set_window_icon(pDialog);
+			gtk_window_set_transient_for(GTK_WINDOW(pDialog), GTK_WINDOW(userData));
+//			prefs::init(pDialog, g_pPopupDlg, g_inPopup, g_nmPopup);
+			prefs::init(pDialog);
 		}
 		else
 		{
+			DEBUGLOGS("settings dbox NOT successfully created");
 			dnit();
 		}
 	}
@@ -1545,7 +2063,7 @@ void gui::on_prefs_activate(GtkMenuItem* pMenuItem, gpointer data)
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_prefs_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+gboolean cgui::on_prefs_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
 {
 	gtk_widget_hide(pWidget);
 	dnit();
@@ -1554,30 +2072,156 @@ gboolean gui::on_prefs_close(GtkWidget* pWidget, GdkEvent* pEvent, gpointer user
 }
 
 // -----------------------------------------------------------------------------
-void gui::on_quit_activate(GtkMenuItem* pMenuItem, gpointer data)
+gboolean cgui::on_query_tooltip(GtkWidget* pWidget, gint x, gint y, gboolean keyboard_mode, GtkTooltip* pTooltip, gpointer userData)
+{
+	if( keyboard_mode )
+		return FALSE;
+
+	DEBUGLOGB;
+#if 0
+	char*       ttag;
+	const int   tlen = 2048;
+	const char* fmts = "fr";
+#endif
+	const int tlen = 2048;
+	char      tbuf [tlen];
+	char      tstr [tlen]; *tstr = '\0';
+	strfmtdt (tstr, tlen, gCfg.show24Hrs ? gCfg.fmtTTip24 : gCfg.fmtTTip12, &gRun.timeCtm, tbuf);
+
+	if( *tstr )
+	{
+#if 0	// NOTE: moved to utility strfmtdt since it already had access to gRun
+		char tend[tlen];
+		char fmt[]  =  "@?";
+
+		for( size_t f = 0; f < vectsz(fmts); f++ )
+		{
+			fmt[1] = fmts[f];
+			if( (ttag = strstr(tstr, fmt)) != NULL )
+			{
+				strvcpy(tend, ttag+2); *ttag = '\0';
+
+				switch( fmts[f] )
+				{
+				case 'f':
+					static const char* txts[] = { gRun.cfaceTxta3, gRun.cfaceTxta2, gRun.cfaceTxta1 };
+
+					for( size_t t = 0; t < vectsz(txts); t++ )
+					{
+						if( *txts[t] )
+						{
+							if( *tstr )
+								strvcat(tstr, " ");
+							strvcat(tstr, txts[t]);
+						}
+					}
+					break;
+
+				case 'r':
+					if( *gRun.riseSetTxt )
+						strvcat(tstr, gRun.riseSetTxt);
+					break;
+				}
+
+				strvcat(tstr, tend);
+			}
+		}
+#endif
+		GtkWindow* pTTipWnd;
+
+		if( pTTipWnd = gtk_widget_get_tooltip_window(pWidget) )
+		{
+			DEBUGLOGS("updating tooltip text via own ttip window (step 1 of 2)");
+
+			GtkLabel* pLabel = GTK_LABEL(g_object_get_data(G_OBJECT(pTTipWnd), g_ttLabel));
+
+			if( pLabel )
+			{
+				DEBUGLOGS("updating tooltip text via own ttip window (step 2 of 2)");
+				gtk_label_set_markup(pLabel, tstr);
+			}
+		}
+		else
+		{
+			DEBUGLOGS("updating tooltip text via sys ttip window");
+			gtk_tooltip_set_markup(pTooltip, tstr);
+		}
+	}
+
+	DEBUGLOGE;
+	return TRUE;
+}
+
+// -----------------------------------------------------------------------------
+void cgui::on_quit_activate(GtkMenuItem* pMenuItem, gpointer data)
 {
 	stopApp();
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_tooltip_show(GtkWidget* pWidget, gint x, gint y, gboolean keyboard_mode, GtkTooltip* pTooltip, gpointer userData)
+void cgui::on_screen_changed(GtkWidget* pWidget, GdkScreen* pPrevScreen, gpointer userData)
 {
-//	update_ts_info();
-
-	gchar    str[128];
-	strftime(str, vectsz(str), gCfg.show24Hrs ? gCfg.fmt24Hrs : gCfg.fmt12Hrs, &gRun.timeCtm);
-
-//	DEBUGLOGP("ttip=%s\n\ndate string=%s\ntimes (bef, cur, dif): %d, %d, %d\n",
-//		str, gRun.acDate, (int)g_timeBef, (int)g_timeCur, (int)g_timeDif);
-
-//	gtk_widget_set_tooltip_text(gRun.pMainWindow, str);
-	gtk_tooltip_set_text(pTooltip, str);
-
-	return TRUE;
+	DEBUGLOGB;
+	// TODO: find out when this gets called to see if it might be of some use
+	//       in either reducing our reliance on wnck or for other unsupported
+	//       requirements (grab the 'new' desktop bkgnd for instance?)
+	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpointer userData)
+void cgui::on_tzone_activate(GtkMenuItem* pMenuItem, gpointer userData)
+{
+	DEBUGLOGB;
+
+	GtkWidget* pDialog = popup_activate('z', "tzone", "tzoneDialog");
+
+	if( pDialog )
+	{
+		g_signal_connect(G_OBJECT(pDialog), "response", G_CALLBACK(on_popup_close), NULL);
+		tzng::init(pDialog, 'z');
+	}
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+// The ::unmap-event signal is emitted when the widget's window is unmapped. A
+// window is unmapped when it becomes invisible on the screen.
+// -----------------------------------------------------------------------------
+gboolean cgui::on_unmap(GtkWidget* pWidget, GdkEvent* pEvent, gpointer userData)
+{
+	DEBUGLOGB;
+
+	if( gRun.scrsaver && !gRun.appStart )
+	{
+		stopApp();
+	}
+	else
+	{
+		DEBUGLOGP("renderIt was %s\n", gRun.renderIt ? "true" : "false");
+
+//		if( gRun.renderIt == true && (!gCfg.sticky || gCfg.clockWS) )
+		if( gRun.renderIt == true )
+		{
+			gRun.renderIt =  false;
+			gRun.renderUp = !gRun.appStart;
+
+			DEBUGLOGP("renderIt is now %s\n", gRun.renderIt ? "true" : "false");
+			DEBUGLOGP("renderUp is now %s\n", gRun.renderUp ? "true" : "false");
+			DEBUGLOGS("turning off rendering - queueing redraw request");
+
+			change_ani_rate(pWidget, gCfg.renderRate, true, false);
+			gtk_widget_queue_draw(pWidget);
+			draw::render_set(pWidget);
+		}
+	}
+
+	DEBUGLOGE;
+	return FALSE;
+}
+
+// -----------------------------------------------------------------------------
+gboolean cgui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpointer userData)
 {
 	DEBUGLOGB;
 
@@ -1601,10 +2245,8 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 	case GDK_SCROLL_DOWN:
 		delta += dincr;
 		break;
-
-	DEBUGLOGP("delta is %d\n", delta);
-
-/*	case GDK_SCROLL_SMOOTH:
+#if 0
+	case GDK_SCROLL_SMOOTH:
 		{
 			double                                    dx,  dy;
 			if( gdk_event_get_scroll_deltas(pScroll, &dx, &dy) )
@@ -1616,27 +2258,35 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 					delta -= dincr;
 			}
 		}
-		break;*/
+		break;
+#endif
 	}
 
-	if( delta )
+	DEBUGLOGP("delta is %d\n", delta);
+
+	if( delta && !gRun.updating )
 	{
 		if( (pScroll->state & GDK_MOD1_MASK) == GDK_MOD1_MASK ) // font size change (alt key normally)
 		{
 			DEBUGLOGS("  font size change request");
 
-			gCfg.fontSize += delta;
-			draw::update_date_surf();
-//			gtk_widget_queue_draw(pWidget);
-			cfg::save();
+			if( (gCfg.fontSize+delta) >= 6 && (gCfg.fontSize+delta) <= 18 ) // reasonableness testing
+			{
+				gCfg.fontSize += delta;
+				draw::update_date_surf(false, false, true);
+				gtk_widget_queue_draw(pWidget);
+				cfg::save();
 
-			DEBUGLOGP("changing font size to %d\n", gCfg.fontSize);
+				DEBUGLOGP("changed font size to %d\n", gCfg.fontSize);
+			}
 		}
-/*		else
+#if 0
+		else
 		if( (pScroll->state & GDK_SUPER_MASK) == GDK_SUPER_MASK ) // ? change (win key normally)
 		{
 			DEBUGLOGS("win+mouse wheel processing is not currently assigned to any action");
-		}*/
+		}
+#endif
 		else
 		if( (pScroll->state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK ) // theme change (ctrl key normally)
 		{
@@ -1649,6 +2299,13 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 
 			DEBUGLOGP("  comparing %d list entries to current theme of %s\n", theme_list_cnt(tl), gCfg.themeFile);
 
+			if( ti == -1 ) // couldn't find the current theme in the list?
+			{
+				// point to top or bottom depending on roll direction
+				ti    = delta > 0 ? 0 : theme_list_cnt(tl)-1;
+				delta = 0;
+			}
+
 			if( ti != -1 )
 			{
 				DEBUGLOGP("found current theme at index %d\n", ti);
@@ -1659,17 +2316,15 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 				{
 					DEBUGLOGP("changing to new theme at index %d\n", ti);
 
-					gRun.updateSurfs = true;
-
 					te = theme_list_nth(tl, ti);
 
 					DEBUGLOGP("changing to new theme %s\n", te.pName->str);
 
-					change_theme(&te, pWidget);
+					change_theme(pWidget, te, true);
 
-					if( g_pGladeXml )
+					if( lgui::okayGUI() )
 					{
-						GtkWidget* pWidget = glade_xml_get_widget(g_pGladeXml, "comboboxTheme");
+						GtkWidget* pWidget = lgui::pWidget("comboboxTheme");
 
 						if( pWidget )
 							gtk_combo_box_set_active(GTK_COMBO_BOX(pWidget), ti);
@@ -1684,18 +2339,17 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 		{
 			DEBUGLOGS("  window size change request");
 
-			float adjF =       (float)delta*0.0025f + 1;
-			int   newW = (int)((float)gCfg.clockW*adjF);
-			int   newH = (int)((float)gCfg.clockH*adjF);
+			float adjF = (float)delta/100.0f;
+			int   newW = gCfg.clockW + (int)((float)gCfg.clockW*adjF);
+			int   newH = gCfg.clockH + (int)((float)gCfg.clockH*adjF);
 
-			if( newW == gCfg.clockW )
-				newW =  gCfg.clockW + delta;
+			if( newW  == gCfg.clockW )
+				newW   = gCfg.clockW + delta;
 
-			if( newH == gCfg.clockH )
-				newH =  gCfg.clockH + delta;
+			if( newH  == gCfg.clockH )
+				newH   = gCfg.clockH + delta;
 
-//			update_wnd_dim(pWidget, newW, newH, false);
-			update_wnd_dim(pWidget, newW, newH, true);
+			update_wnd_dim(pWidget, newW, newH, gCfg.clockW, gCfg.clockH, true);
 			cfg::save();
 		}
 	}
@@ -1703,27 +2357,343 @@ gboolean gui::on_wheel_scroll(GtkWidget* pWidget, GdkEventScroll* pScroll, gpoin
 	DEBUGLOGE;
 	return TRUE;
 }
-/*
+
 // -----------------------------------------------------------------------------
-// The ::window-state-event will be emitted when the state of the toplevel
-// window associated to the widget changes.
+// The ::window-state-event is emitted when the state of the toplevel window
+// associated to the widget changes.
 // -----------------------------------------------------------------------------
-gboolean gui::on_window_state(GtkWidget* pWidget, GdkEventWindowState* pState, gpointer userData)
+gboolean cgui::on_window_state(GtkWidget* pWidget, GdkEventWindowState* pState, gpointer userData)
 {
-	bool maxState  = pState->changed_mask     & GDK_WINDOW_STATE_MAXIMIZED == GDK_WINDOW_STATE_MAXIMIZED;
-	bool maximized = pState->new_window_state & GDK_WINDOW_STATE_MAXIMIZED == GDK_WINDOW_STATE_MAXIMIZED;
+	DEBUGLOGB;
 
-	const char* mc_str = maxState  ? "yes"       : "no";
-	const char* ms_str = maximized ? "maximized" : "unmaximized";
+	bool stkState  = (pState->changed_mask     & GDK_WINDOW_STATE_STICKY)    == GDK_WINDOW_STATE_STICKY;
+	bool sticky    = (pState->new_window_state & GDK_WINDOW_STATE_STICKY)    == GDK_WINDOW_STATE_STICKY;
+#ifdef DEBUGLOG
+	{
+		const char* sc_str = stkState  ? "yes"        : "no";
+		const char* ss_str = sticky    ? "sticky"     : "unstuck";
+		DEBUGLOGP("win sticky   changed? %s, to %s\n", sc_str, ss_str);
+	}
+#endif
 
-	DEBUGLOGP("entry-exit - win max state changed? %s, window is %s\n", mc_str, ms_str);
+	bool hidState  = (pState->changed_mask     & GDK_WINDOW_STATE_WITHDRAWN) == GDK_WINDOW_STATE_WITHDRAWN;
+	bool hidden    = (pState->new_window_state & GDK_WINDOW_STATE_WITHDRAWN) == GDK_WINDOW_STATE_WITHDRAWN;
+#ifdef DEBUGLOG
+	{
+		const char* hc_str = hidState  ? "yes"        : "no";
+		const char* hs_str = hidden    ? "hidden"     : "visible";
+		DEBUGLOGP("win visible  changed? %s, to %s\n", hc_str, hs_str);
+	}
+#endif
 
+	bool maxState  = (pState->changed_mask     & GDK_WINDOW_STATE_MAXIMIZED) == GDK_WINDOW_STATE_MAXIMIZED;
+	bool maximized = (pState->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) == GDK_WINDOW_STATE_MAXIMIZED;
+#ifdef DEBUGLOG
+	{
+		const char* zc_str = maxState  ? "yes"        : "no";
+		const char* zs_str = maximized ? "maximized"  : "unmaximized";
+		DEBUGLOGP("win maximize changed? %s, to %s\n", zc_str, zs_str);
+	}
+#endif
+
+	bool minState  = (pState->changed_mask     & GDK_WINDOW_STATE_ICONIFIED) == GDK_WINDOW_STATE_ICONIFIED;
+	bool minimized = (pState->new_window_state & GDK_WINDOW_STATE_ICONIFIED) == GDK_WINDOW_STATE_ICONIFIED;
+	gRun.minimize  =  minState  ?  minimized   : gRun.minimize;
+#ifdef DEBUGLOG
+	{
+		const char* ic_str = minState  ? "yes"        : "no";
+		const char* is_str = minimized ? "minimized"  : "unminimized";
+		DEBUGLOGP("win minimize changed? %s, to %s\n", ic_str, is_str);
+	}
+#endif
+
+	// TODO: on XFCE, consistent sequence of 2 of these calls is made when
+	//       hiding the clock window in order to get a desktop bkgnd grab
+	//       (first the window is unstuck then it is hidden)
+	//       the reverse holds true for when it's reshown
+	//
+	//       is this consistent across other WMs (all?) to use as way to
+	//       trigger bkgnd grabbing w/o having to resort to using a timer?
+
+	DEBUGLOGE;
 	return FALSE;
 }
-*/
+#if _USEWKSPACE
+#if 0
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::wndMoveEnter(GtkWidget* pWidget, GdkEventButton* pButton)
+void cgui::on_workspace_active_changed(WnckScreen* screen, WnckWorkspace* prevSpace, gpointer userData)
+{
+	DEBUGLOGB;
+
+	if( gRun.scrsaver && !gRun.appStart )
+	{
+		stopApp();
+		DEBUGLOGR(1);
+		return;
+	}
+
+	if( gCfg.sticky || !gCfg.clockWS )
+	{
+		DEBUGLOGR(2);
+		return;
+	}
+
+	WnckWorkspace* actvWrk = wnck_screen_get_active_workspace(screen);
+	WnckWorkspace* trgtWrk = wnck_screen_get_workspace       (screen, gCfg.clockWS-1);
+
+	if( actvWrk != trgtWrk )
+	{
+		DEBUGLOGR(3);
+		return;
+	}
+
+//	g_clockWnd    = wnck_window_get(GDK_WINDOW_XWINDOW(gtk_widget_get_window(gRun.pMainWindow)));
+//	g_clockWrk    = wnck_window_get_workspace(g_clockWnd);
+
+	DEBUGLOGS("setting render It/Up based on new active workspace");
+
+//	WnckWindow*    g_clockWnd = wnck_window_get(GDK_WINDOW_XWINDOW      (gtk_widget_get_window(gRun.pMainWindow)));
+	WnckWindow*    g_clockWnd = wnck_window_get(gdk_x11_drawable_get_xid(gtk_widget_get_window(gRun.pMainWindow)));
+	WnckWorkspace* g_clockWrk = wnck_window_get_workspace(g_clockWnd);
+
+	gRun.renderIt = copts::sticky() || !g_clockWrk || !actvWrk || (g_clockWrk == actvWrk);
+	gRun.renderUp = gRun.renderIt    && !gRun.appStart;
+
+	draw::render_set();
+
+//	if( gRun.scrsaver && !gRun.appStart )
+//	{
+//		stopApp();
+//	}
+//	else
+//	if( gRun.renderUp && !copts::sticky() && (g_clockWrk && g_clockWrk != actvWrk) )
+	if( gRun.renderIt )
+	{
+		DEBUGLOGS("queueing redraw request");
+//		TODO: best to fire off draw timer so renderIt, etc., are handled properly
+		gtk_widget_queue_draw(gRun.pMainWindow);
+		gtk_widget_show(gRun.pMainWindow);
+	}
+
+//	DEBUGLOGP("clockWnd  is %s, clockWrk is %s\n", g_clockWnd    ? "okay" : "null", g_clockWrk ? "okay" : "null");
+//	DEBUGLOGP("rendering is %s\n", gRun.renderIt ? "on"   : "off");
+
+//	if( gRun.renderIt )
+//	{
+////		render_time_handler(gRun.pMainWindow);
+//	}
+//	else
+//	{
+//		if( gRun.renderHandlerId )
+//		{
+//			g_source_remove(gRun.renderHandlerId);
+//			gRun.renderHandlerId = 0;
+//		}
+//	}
+
+//	const char* wsName = wnck_workspace_get_name(actvWrk);
+//	notify_notification_update(m_notification, N_SUMMARY, wsName, N_ICON);
+//	notify_notification_show  (m_notification, NULL);
+
+	DEBUGLOGE;
+}
+#endif
+
+// -----------------------------------------------------------------------------
+static gboolean grab_time_timer(GtkWidget* pWidget)
+{
+	DEBUGLOGB;
+
+	// TODO: need a way to ensure a redraw with the new 'hidden' outline shape
+	//       happens before the timer expires?
+
+//	gboolean ret = gtk_widget_get_visible(pWidget); // continue timer until hidden
+
+//	if( !ret )
+	{
+		DEBUGLOGS("timer killed; getting bkgnd; showing clock");
+
+		draw::grab();
+
+		update_shapes(gRun.pMainWindow, gCfg.clockW, gCfg.clockH, false, true, false);
+		gtk_widget_queue_draw(gRun.pMainWindow);
+		draw::render_set();
+	}
+
+	DEBUGLOGE;
+//	return ret;
+	return FALSE;
+}
+
+// -----------------------------------------------------------------------------
+void cgui::on_workspace_bkgrnd_changed(WnckScreen* pScreen, gpointer userData)
+{
+	DEBUGLOGB;
+
+	// TODO: get this called on active workspace changes even though they all
+	//       use the same bkgnd - workaround possible?
+
+//	on_workspace_active_changed(pScreen, NULL, userData);
+
+//	static
+//	gulong cbpm = -1;
+//	gulong nbpm =  wnck_screen_get_background_pixmap(pScreen);
+
+//	if( cbpm != nbpm )
+//	{
+//		cbpm  = nbpm;
+
+		if( !gRun.appStart && !gRun.appStop && gRun.pMainWindow && !gRun.composed )
+		{
+			DEBUGLOGS("starting timer; hiding clock");
+
+			// TODO: need a way to ensure a redraw with the new 'hidden' outline
+			//       shape happens before the timer expires?
+
+			gint clickThru = gCfg.clickThru, noDisplay = gCfg.noDisplay;
+			gCfg.clickThru =            gCfg.noDisplay = TRUE;
+
+			update_shapes(gRun.pMainWindow, gCfg.clockW, gCfg.clockH, false, true, false);
+			gtk_widget_queue_draw(gRun.pMainWindow);
+			draw::render_set();
+
+			gCfg.clickThru = clickThru; gCfg.noDisplay = noDisplay;
+
+			g_timeout_add_full(waitPrio, 50, (GSourceFunc)grab_time_timer, (gpointer)gRun.pMainWindow, NULL);
+		}
+//	}
+
+	DEBUGLOGE;
+}
+#endif // _USEWKSPACE
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+GtkWidget* cgui::popup_activate(char type, const char* name, const char* widget)
+{
+	DEBUGLOGB;
+
+	if( g_inPopup && g_nmPopup == type )
+	{
+		gtk_window_present(g_pPopupDlg);
+		dnit(false);
+		return NULL;
+	}
+
+	// lgui should always be available since this is a lgui menu item event
+
+	if( g_inPopup || !lgui::okayGUI() )
+	{
+		dnit(!g_inPopup);
+		return NULL;
+	}
+
+	dnit();
+
+	if(!lgui::okayGUI() )
+		lgui::getXml(name);
+
+	GtkWidget* ret = lgui::okayGUI() ? lgui::pWidget(widget) : NULL;
+
+	DEBUGLOGE;
+	return ret;
+}
+
+// -----------------------------------------------------------------------------
+void cgui::setPopup(GtkWidget* pPopupDlg, bool inPopup, char key)
+{
+	DEBUGLOGB;
+
+	DEBUGLOGS("bef show call");
+
+	set_window_icon(pPopupDlg);
+	gtk_widget_show_all(pPopupDlg);
+
+	DEBUGLOGS("aft show call");
+
+	g_pPopupDlg = GTK_WINDOW(pPopupDlg);
+	g_inPopup   = inPopup;
+	g_nmPopup   = key;
+
+	// TODO: these calls (one or both?) cause the popup box to 'follow' the clock
+	//       window from workspace to workspace - is this what's wanted?
+
+	gtk_window_set_transient_for(GTK_WINDOW(pPopupDlg), GTK_WINDOW(gRun.pMainWindow));
+	gtk_window_present(g_pPopupDlg);
+
+	DEBUGLOGE;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+bool cgui::theme_import(GtkWidget* pWidget, const char* uri)
+{
+	DEBUGLOGB;
+
+	bool  ret  = false;
+	char* path = g_filename_from_uri(uri, NULL, NULL);
+	if(  !path )
+	{
+		DEBUGLOGE;
+		return ret;
+	}
+
+	g_strstrip(path);
+
+	int plen = strlen(path);
+	if( plen > 1 )
+	{
+		DEBUGLOGP("path received is\n%s\n", path);
+
+		char tpath[PATH_MAX]; *tpath = '\0';
+		char tfile[64];       *tfile = '\0';
+
+		// TODO: support other types of theme importing besides just archived
+
+		if( loadTheme(path, tpath, vectsz(tpath), tfile, vectsz(tfile)) )
+		{
+			DEBUGLOGP("path received successfully extracted to\n%s%s\n", tpath, tfile);
+
+			// get rid of the trailing / to get what the rest of the app requires
+			tpath[strlen(tpath)-1] = '\0';
+
+			ThemeEntry te;
+			memset(&te, 0, sizeof(te));
+			te.pPath  = g_string_new(tpath);
+			te.pFile  = g_string_new(tfile);
+			te.pName  = g_string_new("");
+			te.pModes = g_string_new("");
+
+			DEBUGLOGP("current theme in use is\n%s/%s\n",   gCfg.themePath, gCfg.themeFile);
+			DEBUGLOGP("switching to new theme of\n%s/%s\n", te.pPath->str,  te.pFile->str);
+
+			change_theme(pWidget, te, true);
+
+			theme_ntry_del(te);
+
+			ret = true;
+		}
+		else
+		{
+			DEBUGLOGS("path received NOT successfully extracted");
+		}
+
+		if( tpath[0] && false )
+			g_del_dir(tpath);
+	}
+
+//	DEBUGLOGP("slen=%d, plen=%d, curs+snxt is\n*****\n%s\n*****\n", snxt, plen, curs+snxt);
+
+	g_free(path);
+
+	DEBUGLOGE;
+	return ret;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+void cgui::wndMoveEnter(GtkWidget* pWidget, GdkEventButton* pButton)
 {
 	g_wndMovein = true;
 
@@ -1745,7 +2715,7 @@ void gui::wndMoveEnter(GtkWidget* pWidget, GdkEventButton* pButton)
 }
 
 // -----------------------------------------------------------------------------
-void gui::wndMoveExit(GtkWidget* pWidget)
+void cgui::wndMoveExit(GtkWidget* pWidget)
 {
 	if( g_wndMovein )
 	{
@@ -1763,7 +2733,7 @@ void gui::wndMoveExit(GtkWidget* pWidget)
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::wndMoveTime(GtkWidget* pWidget)
+gboolean cgui::wndMoveTime(GtkWidget* pWidget)
 {
 	DEBUGLOGB;
 
@@ -1771,11 +2741,11 @@ gboolean gui::wndMoveTime(GtkWidget* pWidget)
 
 	if( g_wndMovein )
 	{
-		gint            x, y;
-		GdkModifierType m           = (GdkModifierType)0;
-		GdkWindow*      pWndMouse   =  gdk_window_get_pointer(pWidget->window, &x, &y, &m);
+		int                     x, y;
+		GdkModifierType               mask;
+		get_cursor_pos(pWidget, x, y, mask);
 
-		if( (m & GDK_BUTTON1_MASK) !=  GDK_BUTTON1_MASK )
+		if( (mask & GDK_BUTTON1_MASK) != GDK_BUTTON1_MASK )
 		{
 			DEBUGLOGS("left mouse button is now up during window movement");
 			wndMoveDone = true;
@@ -1804,7 +2774,7 @@ gboolean gui::wndMoveTime(GtkWidget* pWidget)
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void gui::wndSizeEnter(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdge edge)
+void cgui::wndSizeEnter(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdge edge)
 {
 	g_wndSizein = true;
 
@@ -1814,37 +2784,47 @@ void gui::wndSizeEnter(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdg
 //	gdk_window_set_event_compression(GTK_WINDOW(gtk_widget_get_toplevel(pWidget)), FALSE);
 //#endif
 
-	DEBUGLOGS("middle mouse button is now down - creating check timer");
+	#ifndef GDK_WINDOW_EDGE_CENTER
+	#define GDK_WINDOW_EDGE_CENTER (GdkWindowEdge)12345
+	#endif
 
-	if( g_wndSizeT )
-		g_source_remove(g_wndSizeT);
+	double xcen = (double)gCfg.clockW/2.0, ycen = (double)gCfg.clockH/2.0;
+	double xcmx = (double)gCfg.clockW/8.0, ycmx = (double)gCfg.clockH/8.0;
+	double xrel = (double)pButton->x-xcen, yrel = (double)pButton->y-ycen;
+	double cang =  180.0-atan2(xrel, yrel)*180.0/M_PI; // make cursor pos. angle start from top (0->360)
 
-	// TODO: need to add in screen center testing
+	DEBUGLOGP("curpos=(%3.f,%3.f), cen=(%3.f,%3.f), rel=(%3.f,%3.f), ang=%3.2f\n",
+		(double)pButton->x, (double)pButton->y, xcen, ycen, xrel, yrel, cang);
 
-	double  xc = (double)gCfg.clockW*0.5;
-	double  yc = (double)gCfg.clockH*0.5;
-	bool    q1 =  pButton->x >= xc && pButton->y <= yc;
-	bool    q2 =  pButton->x >= xc && pButton->y >  yc;
-	bool    q3 =  pButton->x <  xc && pButton->y >  yc;
-	bool    q4 =  pButton->x <  xc && pButton->y <= yc;
-	int     pq =  q1 ? 1 : (q2 ? 2 : (q3 ? 3 : 4));
-
-	switch( pq )
+	if( fabs(xrel) <= xcmx && fabs(yrel) <= ycmx )
 	{
-	case 1: edge = GDK_WINDOW_EDGE_NORTH_EAST; break;
-	case 2: edge = GDK_WINDOW_EDGE_SOUTH_EAST; break;
-	case 3: edge = GDK_WINDOW_EDGE_SOUTH_WEST; break;
-	case 4: edge = GDK_WINDOW_EDGE_NORTH_WEST; break;
+		edge = GDK_WINDOW_EDGE_CENTER;
+	}
+	else
+	{
+		GdkWindowEdge edgs[] =
+		{
+			GDK_WINDOW_EDGE_NORTH,      GDK_WINDOW_EDGE_NORTH_EAST, GDK_WINDOW_EDGE_EAST,
+			GDK_WINDOW_EDGE_SOUTH_EAST, GDK_WINDOW_EDGE_SOUTH,      GDK_WINDOW_EDGE_SOUTH_WEST,
+			GDK_WINDOW_EDGE_WEST,       GDK_WINDOW_EDGE_NORTH_WEST, GDK_WINDOW_EDGE_NORTH
+		};
+
+		for( size_t e = 0; e < vectsz(edgs); e++ )
+		{
+			if( cang >= 45.0*e-22.5 && cang < 45.0*e+22.5 )
+			{
+				edge  = edgs[e];
+				break;
+			}
+		}
 	}
 
 	GdkGeometry geom;
-	int         hints = GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE;
-	geom.min_width	  = MIN_CWIDTH;
-	geom.min_height   = MIN_CHEIGHT;
-//	geom.max_width	  = MAX_CWIDTH;
-//	geom.max_height   = MAX_CHEIGHT;
-	geom.max_width	  = gdk_screen_get_width (gdk_screen_get_default());
-	geom.max_height   = gdk_screen_get_height(gdk_screen_get_default());
+	int         hints   = GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE;
+	GdkScreen*  pScreen = gtk_window_get_screen(GTK_WINDOW(pWidget));
+
+	geom.min_width  = MIN_CLOCKW, geom.max_width  = gdk_screen_get_width (pScreen);
+	geom.min_height = MIN_CLOCKH, geom.max_height = gdk_screen_get_height(pScreen);
 
 	if( (pButton->state & GDK_SHIFT_MASK) == GDK_SHIFT_MASK ) // force square window resizing
 	{
@@ -1853,18 +2833,36 @@ void gui::wndSizeEnter(GtkWidget* pWidget, GdkEventButton* pButton, GdkWindowEdg
 		geom.max_aspect = 1.0;
 	}
 
+	pWidget            = gtk_widget_get_toplevel(pWidget);
+	GtkWindow* pWindow = GTK_WINDOW(pWidget);
+
+	if( edge == GDK_WINDOW_EDGE_CENTER )
+	{
+		// TODO: need to add in center relative resizing
+		DEBUGLOGS("center relative resizing currently not supported");
+		change_cursor(pWidget, GDK_CROSSHAIR);
+	}
+	else
+	{
+		DEBUGLOGS("beginning resize drag");
+
+		gtk_window_begin_resize_drag(pWindow, edge, pButton->button, pButton->x_root, pButton->y_root, pButton->time);
+	}
+
+	DEBUGLOGS("middle mouse button is now down - creating check timer");
+
+	gtk_window_set_geometry_hints(pWindow, pWidget, &geom, GdkWindowHints(hints));
+
+	if( g_wndSizeT )
+		g_source_remove(g_wndSizeT);
+
 	g_wndSizeT = g_timeout_add(200, (GSourceFunc)wndSizeTime, (gpointer)pWidget);
-
-	DEBUGLOGS("beginning resize drag");
-
-	gtk_window_set_geometry_hints(GTK_WINDOW(gtk_widget_get_toplevel(pWidget)), pWidget, &geom, GdkWindowHints(hints));
-	gtk_window_begin_resize_drag (GTK_WINDOW(gtk_widget_get_toplevel(pWidget)), edge, pButton->button, pButton->x_root, pButton->y_root, pButton->time);
 
 	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-void gui::wndSizeExit(GtkWidget* pWidget)
+void cgui::wndSizeExit(GtkWidget* pWidget)
 {
 	if( g_wndSizein )
 	{
@@ -1876,20 +2874,25 @@ void gui::wndSizeExit(GtkWidget* pWidget)
 //		gdk_window_set_event_compression(GTK_WINDOW(gtk_widget_get_toplevel(pWidget)), TRUE);
 //#endif
 
+//		change_cursor(gtk_widget_get_toplevel(pWidget), GDK_FLEUR);
+
 		gint                                      newW,  newH;
 		gtk_window_get_size(GTK_WINDOW(pWidget), &newW, &newH);
 
-		DEBUGLOGP("setting new window size (%d, %d)\n", newW, newH);
-
-		update_wnd_dim(pWidget, newW, newH, true);
-		cfg::save();
+		if( newW != gCfg.clockW || newH != gCfg.clockH )
+		{
+			DEBUGLOGP("setting new window size (%d, %d)\n", newW, newH);
+//			update_wnd_dim(pWidget, newW, newH, true);
+			update_wnd_dim(pWidget, newW, newH, gCfg.clockW, gCfg.clockH, true);
+			cfg::save();
+		}
 	}
 
 	DEBUGLOGE;
 }
 
 // -----------------------------------------------------------------------------
-gboolean gui::wndSizeTime(GtkWidget* pWidget)
+gboolean cgui::wndSizeTime(GtkWidget* pWidget)
 {
 	DEBUGLOGB;
 
@@ -1897,11 +2900,11 @@ gboolean gui::wndSizeTime(GtkWidget* pWidget)
 
 	if( g_wndSizein )
 	{
-		gint            x, y;
-		GdkModifierType m           = (GdkModifierType)0;
-		GdkWindow*      pWndMouse   =  gdk_window_get_pointer(pWidget->window, &x, &y, &m);
+		int                     x, y;
+		GdkModifierType               mask;
+		get_cursor_pos(pWidget, x, y, mask);
 
-		if( (m & GDK_BUTTON2_MASK) !=  GDK_BUTTON2_MASK )
+		if( (mask & GDK_BUTTON2_MASK) != GDK_BUTTON2_MASK )
 		{
 			DEBUGLOGS("left mouse button is now up during window sizing");
 			wndSizeDone = true;
@@ -1927,4 +2930,6 @@ gboolean gui::wndSizeTime(GtkWidget* pWidget)
 	DEBUGLOGE;
 	return TRUE;
 }
+
+#endif // _USEGTK
 
